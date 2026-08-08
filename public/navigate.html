@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CampusNav • Find Route</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/dashboard.css" />
+  <style>
+    .route-form {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 16px;
+      align-items: end;
+      margin-bottom: 24px;
+    }
+    .field label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .field select {
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 0.95rem;
+      outline: none;
+    }
+    .field select:focus { border-color: var(--primary); }
+    .swap-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 42px; height: 42px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1.2rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .swap-btn:hover { border-color: var(--primary); }
+    .result-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      min-height: 120px;
+    }
+    .result-box .empty { color: var(--muted); text-align: center; padding: 30px 0; }
+    .path-list { list-style: none; }
+    .path-list li {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .path-list li:last-child { border-bottom: none; }
+    .step-num {
+      width: 28px; height: 28px;
+      background: rgba(99,102,241,0.2);
+      color: #a5b4fc;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: 600;
+    }
+    .algo-badge {
+      display: inline-block;
+      background: rgba(99,102,241,0.15);
+      color: #a5b4fc;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="logo-icon">
+        <svg viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="12" fill="url(#g)"/>
+          <path d="M14 30 L24 12 L34 30" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="24" cy="34" r="3" fill="white"/>
+          <defs>
+            <linearGradient id="g" x1="0" y1="0" x2="48" y2="48">
+              <stop stop-color="#6366f1"/><stop offset="1" stop-color="#8b5cf6"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <span>CampusNav</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="/dashboard.html" class="nav-item">Dashboard</a>
+      <a href="/map.html" class="nav-item">Campus Map</a>
+      <a href="/navigate.html" class="nav-item active">Find Route</a>
+      <a href="#" class="nav-item disabled">Favourites <span class="badge">Soon</span></a>
+      <a href="#" class="nav-item disabled">Admin <span class="badge">Soon</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="avatar" id="avatar">P</div>
+        <div>
+          <div class="user-name" id="userName">—</div>
+          <div class="user-role">Student</div>
+        </div>
+      </div>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <h1>Find Shortest Route</h1>
+        <p class="subtitle">Using Dijkstra's Algorithm on campus graph</p>
+      </div>
+    </header>
+
+    <div class="card">
+      <div class="route-form">
+        <div class="field">
+          <label>From</label>
+          <select id="fromSelect"></select>
+        </div>
+        <button class="swap-btn" id="swapBtn" title="Swap">⇄</button>
+        <div class="field">
+          <label>To</label>
+          <select id="toSelect"></select>
+        </div>
+      </div>
+      <button class="btn primary" id="findBtn" style="width:100%; margin-bottom:20px;">
+        Find Shortest Path
+      </button>
+
+      <div class="result-box" id="resultBox">
+        <div class="empty">Select source and destination, then click Find Shortest Path</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px;">
+      <div class="card-header">
+        <h2>How it works</h2>
+      </div>
+      <p class="about-text">
+        The campus is modelled as a <strong>weighted graph</strong>. Each building is a vertex.
+        Pathways between buildings are edges with weights = approximate walking distance.
+        <strong>Dijkstra's Algorithm</strong> finds the shortest path from the source to the destination.
+        This is the core Computer Science concept demonstrated in this mini project.
+      </p>
+    </div>
+  </main>
+
+  <script>
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!token || !user) window.location.href = '/';
+    else {
+      document.getElementById('userName').textContent = user.username;
+      document.getElementById('avatar').textContent = user.username.charAt(0).toUpperCase();
+    }
+    document.getElementById('logoutBtn').onclick = () => {
+      localStorage.clear();
+      window.location.href = '/';
+    };
+
+    // Graph data (simplified distances based on map layout)
+    const locations = [
+      { id: 'entrance', name: 'Main Entrance (You Are Here)' },
+      { id: 'spit', name: 'SPIT' },
+      { id: 'spce', name: 'SPCE' },
+      { id: 'workshop', name: 'SPCE Workshop' },
+      { id: 'library', name: 'Library' },
+      { id: 'lib-ext', name: 'Library Extension' },
+      { id: 'bhavans-college', name: "Bhavan's College" },
+      { id: 'cultural', name: "Bhavan's Cultural Centre" },
+      { id: 'spjimr', name: 'SPJIMR' },
+      { id: 'spjimr-hostel', name: 'SPJIMR Hostel' },
+      { id: 'hostel', name: 'Hostel' },
+      { id: 'wadia', name: 'A. H. Wadia Highschool' },
+      { id: 'sports-complex', name: 'Sports Complex' },
+      { id: 'playground', name: 'Playground' },
+    ];
+
+    // Weighted graph (adjacency list) - distances are approximate walking units
+    const graph = {
+      'entrance': { 'lib-ext': 4, 'spjimr': 5, 'library': 6, 'bhavans-college': 5 },
+      'lib-ext': { 'entrance': 4, 'spjimr': 3, 'spit': 5 },
+      'spjimr': { 'lib-ext': 3, 'entrance': 5, 'spce': 4, 'spit': 3 },
+      'spit': { 'spjimr': 3, 'spce': 2, 'workshop': 4, 'lib-ext': 5 },
+      'spce': { 'spit': 2, 'spjimr': 4, 'bhavans-college': 3, 'workshop': 3 },
+      'workshop': { 'spit': 4, 'spce': 3, 'hostel': 5 },
+      'hostel': { 'workshop': 5, 'spjimr-hostel': 3 },
+      'spjimr-hostel': { 'hostel': 3, 'wadia': 4, 'cultural': 6 },
+      'wadia': { 'spjimr-hostel': 4, 'cultural': 3 },
+      'cultural': { 'wadia': 3, 'spjimr-hostel': 6, 'library': 5, 'playground': 4 },
+      'library': { 'entrance': 6, 'bhavans-college': 2, 'cultural': 5, 'playground': 3 },
+      'bhavans-college': { 'entrance': 5, 'spce': 3, 'library': 2 },
+      'playground': { 'library': 3, 'cultural': 4, 'sports-complex': 2 },
+      'sports-complex': { 'playground': 2 }
+    };
+
+    // Fill selects
+    const fromSelect = document.getElementById('fromSelect');
+    const toSelect = document.getElementById('toSelect');
+    locations.forEach(loc => {
+      fromSelect.innerHTML += `<option value="${loc.id}">${loc.name}</option>`;
+      toSelect.innerHTML += `<option value="${loc.id}">${loc.name}</option>`;
+    });
+    toSelect.value = 'library';
+
+    // Preselect from URL
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('from')) fromSelect.value = params.get('from');
+
+    document.getElementById('swapBtn').onclick = () => {
+      const t = fromSelect.value;
+      fromSelect.value = toSelect.value;
+      toSelect.value = t;
+    };
+
+    // Dijkstra
+    function dijkstra(start, end) {
+      const dist = {};
+      const prev = {};
+      const pq = new Set(Object.keys(graph));
+
+      Object.keys(graph).forEach(n => { dist[n] = Infinity; prev[n] = null; });
+      dist[start] = 0;
+
+      while (pq.size > 0) {
+        let u = null;
+        let min = Infinity;
+        pq.forEach(n => {
+          if (dist[n] < min) { min = dist[n]; u = n; }
+        });
+        if (u === null || u === end) break;
+        pq.delete(u);
+
+        const neighbors = graph[u] || {};
+        for (const [v, w] of Object.entries(neighbors)) {
+          const alt = dist[u] + w;
+          if (alt < dist[v]) {
+            dist[v] = alt;
+            prev[v] = u;
+          }
+        }
+      }
+
+      // Reconstruct path
+      const path = [];
+      let cur = end;
+      while (cur) {
+        path.unshift(cur);
+        cur = prev[cur];
+      }
+      if (path[0] !== start) return null;
+      return { path, distance: dist[end] };
+    }
+
+    document.getElementById('findBtn').onclick = () => {
+      const from = fromSelect.value;
+      const to = toSelect.value;
+      if (from === to) {
+        document.getElementById('resultBox').innerHTML = '<div class="empty">Source and destination are the same</div>';
+        return;
+      }
+
+      const result = dijkstra(from, to);
+      const box = document.getElementById('resultBox');
+
+      if (!result) {
+        box.innerHTML = '<div class="empty">No path found between these locations</div>';
+        return;
+      }
+
+      const nameOf = id => locations.find(l => l.id === id)?.name || id;
+
+      let html = `<div class="algo-badge">Dijkstra's Algorithm • Distance: ${result.distance} units</div>`;
+      html += '<ul class="path-list">';
+      result.path.forEach((id, i) => {
+        html += `<li><span class="step-num">${i + 1}</span> ${nameOf(id)}</li>`;
+      });
+      html += '</ul>';
+      box.innerHTML = html;
+    };
+  </script>
+</body>
+</html>

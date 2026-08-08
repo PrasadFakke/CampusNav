@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CampusNav • Campus Map</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/map.css" />
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="logo-icon">
+        <svg viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="12" fill="url(#g)"/>
+          <path d="M14 30 L24 12 L34 30" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="24" cy="34" r="3" fill="white"/>
+          <defs>
+            <linearGradient id="g" x1="0" y1="0" x2="48" y2="48">
+              <stop stop-color="#6366f1"/><stop offset="1" stop-color="#8b5cf6"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <span>CampusNav</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="/dashboard.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Dashboard
+      </a>
+      <a href="/map.html" class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+        Campus Map
+      </a>
+      <a href="/navigate.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+        Find Route
+      </a>
+      <a href="#" class="nav-item disabled">Favourites <span class="badge">Soon</span></a>
+      <a href="#" class="nav-item disabled">Admin <span class="badge">Soon</span></a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="avatar" id="avatar">P</div>
+        <div>
+          <div class="user-name" id="userName">—</div>
+          <div class="user-role">Student</div>
+        </div>
+      </div>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <h1>Campus Map</h1>
+        <p class="subtitle">Click any building to select it • Based on your college layout</p>
+      </div>
+      <div class="topbar-actions">
+        <a href="/navigate.html" class="btn primary">Find Route →</a>
+      </div>
+    </header>
+
+    <div class="map-layout">
+      <!-- Interactive Map -->
+      <div class="map-container">
+        <div class="map-canvas" id="mapCanvas">
+          <!-- SVG Map approximating the photo -->
+          <svg viewBox="0 0 800 700" class="campus-svg" id="campusSvg">
+            <!-- Background -->
+            <rect width="800" height="700" fill="#1a1a24" rx="16"/>
+
+            <!-- Lake (center) -->
+            <ellipse cx="380" cy="280" rx="90" ry="70" fill="#3b82f6" opacity="0.7" class="lake"/>
+            <text x="380" y="285" text-anchor="middle" fill="white" font-size="14" font-weight="600">LAKE</text>
+
+            <!-- Playground (right brown area) -->
+            <rect x="580" y="250" width="180" height="220" rx="8" fill="#b45309" opacity="0.7" class="playground"/>
+            <text x="670" y="350" text-anchor="middle" fill="white" font-size="13" font-weight="600">PLAYGROUND</text>
+            <rect x="620" y="420" width="100" height="35" rx="6" fill="#92400e" class="building" data-id="sports-complex" data-name="Sports Complex"/>
+            <text x="670" y="442" text-anchor="middle" fill="white" font-size="11">Sports Complex</text>
+
+            <!-- Buildings - positioned to roughly match the photo -->
+
+            <!-- Top row -->
+            <rect x="80" y="60" width="100" height="55" rx="6" fill="#4b5563" class="building" data-id="hostel" data-name="Hostel"/>
+            <text x="130" y="92" text-anchor="middle" fill="white" font-size="12">Hostel</text>
+
+            <rect x="220" y="40" width="130" height="60" rx="6" fill="#4b5563" class="building" data-id="spjimr-hostel" data-name="SPJIMR Hostel"/>
+            <text x="285" y="75" text-anchor="middle" fill="white" font-size="12">SPJIMR Hostel</text>
+
+            <rect x="420" y="50" width="140" height="55" rx="6" fill="#4b5563" class="building" data-id="wadia" data-name="A. H. Wadia Highschool"/>
+            <text x="490" y="75" text-anchor="middle" fill="white" font-size="11">A.H. Wadia Highschool</text>
+
+            <rect x="600" y="70" width="120" height="70" rx="6" fill="#4b5563" class="building" data-id="cultural" data-name="Bhavan's Cultural Centre"/>
+            <text x="660" y="100" text-anchor="middle" fill="white" font-size="11">Bhavan's Cultural</text>
+            <text x="660" y="115" text-anchor="middle" fill="white" font-size="11">Centre</text>
+
+            <!-- Left side -->
+            <rect x="40" y="180" width="100" height="80" rx="6" fill="#4b5563" class="building" data-id="workshop" data-name="SPCE Workshop"/>
+            <text x="90" y="215" text-anchor="middle" fill="white" font-size="12">SPCE</text>
+            <text x="90" y="232" text-anchor="middle" fill="white" font-size="12">Workshop</text>
+
+            <rect x="50" y="320" width="90" height="70" rx="6" fill="#6366f1" class="building highlight" data-id="spit" data-name="SPIT"/>
+            <text x="95" y="360" text-anchor="middle" fill="white" font-size="14" font-weight="600">SPIT</text>
+
+            <rect x="160" y="300" width="90" height="70" rx="6" fill="#6366f1" class="building highlight" data-id="spce" data-name="SPCE"/>
+            <text x="205" y="340" text-anchor="middle" fill="white" font-size="14" font-weight="600">SPCE</text>
+
+            <!-- Center bottom -->
+            <rect x="280" y="380" width="130" height="70" rx="6" fill="#4b5563" class="building" data-id="bhavans-college" data-name="Bhavan's College"/>
+            <text x="345" y="412" text-anchor="middle" fill="white" font-size="12">Bhavan's</text>
+            <text x="345" y="428" text-anchor="middle" fill="white" font-size="12">College</text>
+
+            <rect x="430" y="360" width="100" height="60" rx="6" fill="#4b5563" class="building" data-id="library" data-name="Library"/>
+            <text x="480" y="395" text-anchor="middle" fill="white" font-size="13">Library</text>
+
+            <!-- Bottom -->
+            <rect x="120" y="450" width="110" height="65" rx="6" fill="#4b5563" class="building" data-id="spjimr" data-name="SPJIMR"/>
+            <text x="175" y="488" text-anchor="middle" fill="white" font-size="13">SPJIMR</text>
+
+            <rect x="100" y="550" width="140" height="55" rx="6" fill="#4b5563" class="building" data-id="lib-ext" data-name="Library Extension"/>
+            <text x="170" y="583" text-anchor="middle" fill="white" font-size="12">Library Extension</text>
+
+            <!-- You Are Here marker -->
+            <circle cx="400" y="620" r="14" fill="#ef4444" class="you-are-here"/>
+            <circle cx="400" y="620" r="7" fill="white"/>
+            <text x="400" y="655" text-anchor="middle" fill="#f87171" font-size="13" font-weight="600">YOU ARE HERE</text>
+
+            <!-- Pathways (simple lines) -->
+            <g stroke="#3a3a4a" stroke-width="3" fill="none" opacity="0.6">
+              <path d="M95 390 L95 450 L175 450"/>
+              <path d="M205 370 L205 450"/>
+              <path d="M250 335 L280 400"/>
+              <path d="M345 380 L345 280"/>
+              <path d="M430 390 L480 390"/>
+              <path d="M480 360 L480 280"/>
+              <path d="M380 350 L380 400"/>
+              <path d="M170 580 L400 620"/>
+              <path d="M400 620 L480 420"/>
+            </g>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Info Panel -->
+      <div class="info-panel">
+        <h2>Selected Location</h2>
+        <div class="selected-box" id="selectedBox">
+          <p class="placeholder">Click a building on the map</p>
+        </div>
+
+        <h3>All Locations</h3>
+        <div class="loc-buttons" id="locButtons">
+          <!-- filled by JS -->
+        </div>
+
+        <div class="panel-actions">
+          <a href="/navigate.html" class="btn primary full" id="routeBtn">Find Route from here</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/map.js"></script>
+</body>
+</html>
