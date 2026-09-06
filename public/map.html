@@ -63,8 +63,7 @@
         <div>
           <h1>Campus Map</h1>
           <p class="subtitle">
-            Phase 2 • Click buildings to select From / To • Graph modelled
-            campus
+            Edge weights shown • Click From → To → Calculate
           </p>
         </div>
         <div class="topbar-actions">
@@ -79,68 +78,8 @@
           <div class="map-canvas">
             <svg viewBox="0 0 800 700" class="campus-svg" id="campusSvg">
               <rect width="800" height="700" fill="#1a1a24" rx="16" />
-              <!-- Lake -->
-              <ellipse
-                cx="380"
-                cy="280"
-                rx="90"
-                ry="70"
-                fill="#3b82f6"
-                opacity="0.55"
-              />
-              <text
-                x="380"
-                y="285"
-                text-anchor="middle"
-                fill="white"
-                font-size="14"
-                font-weight="600"
-              >
-                LAKE
-              </text>
-              <!-- Playground area -->
-              <rect
-                x="580"
-                y="250"
-                width="180"
-                height="220"
-                rx="8"
-                fill="#b45309"
-                opacity="0.55"
-              />
-              <text
-                x="670"
-                y="355"
-                text-anchor="middle"
-                fill="white"
-                font-size="13"
-                font-weight="600"
-              >
-                PLAYGROUND
-              </text>
-              <!-- Edges drawn by JS -->
               <g id="edgesLayer"></g>
-              <!-- Buildings drawn by JS -->
               <g id="nodesLayer"></g>
-              <!-- You Are Here -->
-              <circle
-                cx="400"
-                cy="620"
-                r="14"
-                fill="#ef4444"
-                class="you-are-here"
-              />
-              <circle cx="400" cy="620" r="7" fill="white" />
-              <text
-                x="400"
-                y="655"
-                text-anchor="middle"
-                fill="#f87171"
-                font-size="13"
-                font-weight="600"
-              >
-                YOU ARE HERE
-              </text>
             </svg>
           </div>
         </div>

@@ -19,10 +19,17 @@ let fromId = null;
 let toId = null;
 let currentPath = null;
 
-// Draw graph edges
+function isPathEdge(u, v, pathIds) {
+  if (!pathIds || pathIds.length < 2) return false;
+  for (let i = 0; i < pathIds.length - 1; i++) {
+    if ((pathIds[i] === u && pathIds[i + 1] === v) ||
+        (pathIds[i] === v && pathIds[i + 1] === u)) return true;
+  }
+  return false;
+}
+
 function drawEdges(pathIds) {
   const layer = document.getElementById('edgesLayer');
-  const pathSet = pathIds ? new Set(pathIds) : null;
   const drawn = new Set();
   let html = '';
 
@@ -36,31 +43,41 @@ function drawEdges(pathIds) {
       const locV = locations.find(l => l.id === v);
       if (!locV) return;
 
-      let isPath = false;
-      if (pathIds) {
-        for (let i = 0; i < pathIds.length - 1; i++) {
-          if ((pathIds[i] === u && pathIds[i + 1] === v) ||
-              (pathIds[i] === v && pathIds[i + 1] === u)) {
-            isPath = true;
-            break;
-          }
-        }
-      }
+      const weight = graph[u][v];
+      const isPath = isPathEdge(u, v, pathIds);
+      const mx = (locU.x + locV.x) / 2;
+      const my = (locU.y + locV.y) / 2;
 
       html += `<line x1="${locU.x}" y1="${locU.y}" x2="${locV.x}" y2="${locV.y}"
         stroke="${isPath ? '#6366f1' : '#3a3a4a'}"
-        stroke-width="${isPath ? 5 : 2.5}"
+        stroke-width="${isPath ? 5 : 2}"
         stroke-linecap="round"
-        opacity="${isPath ? 1 : 0.55}"/>`;
+        opacity="${isPath ? 1 : 0.5}"/>`;
+
+      // Weight label on edge
+      html += `<circle cx="${mx}" cy="${my}" r="10" fill="${isPath ? '#312e81' : '#1a1a24'}" stroke="${isPath ? '#818cf8' : '#3a3a4a'}" stroke-width="1"/>`;
+      html += `<text x="${mx}" y="${my + 3.5}" text-anchor="middle" fill="${isPath ? '#c4b5fd' : '#9898a8'}" font-size="10" font-weight="600">${weight}</text>`;
     });
   });
   layer.innerHTML = html;
 }
 
-// Draw nodes (buildings)
 function drawNodes() {
   const layer = document.getElementById('nodesLayer');
   let html = '';
+
+  // Lake (not clickable for routing usually)
+  const lake = locations.find(l => l.id === 'lake');
+  if (lake) {
+    html += `<ellipse cx="${lake.x}" cy="${lake.y}" rx="70" ry="55" fill="#3b82f6" opacity="0.45"/>`;
+    html += `<text x="${lake.x}" y="${lake.y + 5}" text-anchor="middle" fill="white" font-size="13" font-weight="600">LAKE</text>`;
+  }
+
+  // Playground area background (behind node)
+  const pg = locations.find(l => l.id === 'playground');
+  if (pg) {
+    html += `<rect x="580" y="250" width="180" height="140" rx="8" fill="#b45309" opacity="0.35"/>`;
+  }
 
   locations.forEach(loc => {
     if (loc.id === 'lake') return;
@@ -72,32 +89,38 @@ function drawNodes() {
     let fill = '#4b5563';
     let stroke = 'transparent';
     let strokeW = 0;
-    let r = 18;
+    let r = 16;
 
-    if (isFrom) { fill = '#22c55e'; stroke = '#86efac'; strokeW = 3; r = 20; }
-    else if (isTo) { fill = '#ef4444'; stroke = '#fca5a5'; strokeW = 3; r = 20; }
-    else if (onPath) { fill = '#6366f1'; stroke = '#c4b5fd'; strokeW = 2; r = 18; }
+    if (isFrom) { fill = '#22c55e'; stroke = '#86efac'; strokeW = 3; r = 18; }
+    else if (isTo) { fill = '#ef4444'; stroke = '#fca5a5'; strokeW = 3; r = 18; }
+    else if (onPath) { fill = '#6366f1'; stroke = '#c4b5fd'; strokeW = 2; r = 17; }
 
-    const shortName = loc.name.length > 14 ? loc.name.split(' ')[0] : loc.name;
+    const label = window.getShortLabel(loc.id);
 
     html += `
       <g class="building-node" data-id="${loc.id}" style="cursor:pointer">
         <circle cx="${loc.x}" cy="${loc.y}" r="${r}" fill="${fill}"
           stroke="${stroke}" stroke-width="${strokeW}"/>
-        <text x="${loc.x}" y="${loc.y + r + 16}" text-anchor="middle"
-          fill="#e5e5ef" font-size="11" font-weight="500">${shortName}</text>
+        <text x="${loc.x}" y="${loc.y + r + 14}" text-anchor="middle"
+          fill="#e5e5ef" font-size="11" font-weight="500">${label}</text>
       </g>`;
   });
 
-  // Sports complex label area
-  html += `<rect x="620" y="420" width="100" height="35" rx="6" fill="#92400e" class="building-node" data-id="sports-complex" style="cursor:pointer"/>
-    <text x="670" y="442" text-anchor="middle" fill="white" font-size="11">Sports Complex</text>`;
+  // You Are Here marker (near entrance, offset so it doesn't cover the node)
+  const ent = locations.find(l => l.id === 'entrance');
+  if (ent) {
+    html += `
+      <circle cx="${ent.x}" cy="${ent.y + 36}" r="8" fill="#ef4444" opacity="0.9"/>
+      <circle cx="${ent.x}" cy="${ent.y + 36}" r="4" fill="white"/>
+      <text x="${ent.x}" y="${ent.y + 56}" text-anchor="middle" fill="#f87171" font-size="11" font-weight="600">YOU ARE HERE</text>
+    `;
+  }
 
   layer.innerHTML = html;
 
   document.querySelectorAll('.building-node').forEach(el => {
     el.addEventListener('click', () => {
-      const id = el.getAttribute('data-id') || el.dataset.id;
+      const id = el.getAttribute('data-id');
       if (id) selectLocation(id);
     });
   });
@@ -117,12 +140,11 @@ function selectLocation(id) {
   document.getElementById('fromName').textContent = fromId ? window.getLocationName(fromId) : 'Click a building';
   document.getElementById('toName').textContent = toId ? window.getLocationName(toId) : 'Click another building';
 
-  const calcBtn = document.getElementById('calcBtn');
-  calcBtn.disabled = !(fromId && toId);
+  document.getElementById('calcBtn').disabled = !(fromId && toId);
 
-  // Update route button link
   if (fromId) {
-    document.getElementById('goRouteBtn').href = `/navigate.html?from=${fromId}${toId ? '&to=' + toId : ''}`;
+    document.getElementById('goRouteBtn').href =
+      `/navigate.html?from=${fromId}${toId ? '&to=' + toId : ''}`;
   }
 
   document.getElementById('pathResult').style.display = 'none';
@@ -174,7 +196,6 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   drawNodes();
 });
 
-// Location buttons
 const locButtons = document.getElementById('locButtons');
 locations.filter(l => l.id !== 'lake').forEach(loc => {
   const btn = document.createElement('button');
@@ -184,6 +205,5 @@ locations.filter(l => l.id !== 'lake').forEach(loc => {
   locButtons.appendChild(btn);
 });
 
-// Initial draw
 drawEdges(null);
 drawNodes();

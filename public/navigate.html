@@ -202,7 +202,7 @@
       <header class="topbar">
         <div>
           <h1>Find Shortest Route</h1>
-          <p class="subtitle">Phase 2 • Dijkstra’s Algorithm on Campus Graph</p>
+          <p class="subtitle">Dijkstra’s Algorithm on Campus Graph</p>
         </div>
         <div class="topbar-actions">
           <a href="/map.html" class="btn primary">Open Full Map</a>
@@ -243,7 +243,7 @@
 
       <div class="card" style="margin-top: 20px">
         <div class="card-header">
-          <h2>How Phase 2 Works</h2>
+          <h2>How Our App Works</h2>
         </div>
         <p class="about-text">
           The campus is modelled as a <strong>weighted graph</strong>. Each
@@ -298,11 +298,23 @@
         toSelect.value = t;
       };
 
+      function isPathEdge(u, v, pathIds) {
+        if (!pathIds || pathIds.length < 2) return false;
+        for (let i = 0; i < pathIds.length - 1; i++) {
+          if (
+            (pathIds[i] === u && pathIds[i + 1] === v) ||
+            (pathIds[i] === v && pathIds[i + 1] === u)
+          )
+            return true;
+        }
+        return false;
+      }
+
       function drawMiniMap(pathIds) {
         const svg = document.getElementById("miniMap");
         const pathSet = new Set(pathIds || []);
 
-        // Edges
+        // Edges — only consecutive path edges are highlighted
         let edgesHtml = "";
         const drawn = new Set();
         Object.keys(graph).forEach((u) => {
@@ -314,14 +326,14 @@
             drawn.add(key);
             const locV = locations.find((l) => l.id === v);
             if (!locV) return;
-            const isPath =
-              (pathSet.has(u) &&
-                pathSet.has(v) &&
-                pathIds.indexOf(v) === pathIds.indexOf(u) + 1) ||
-              pathIds.indexOf(u) === pathIds.indexOf(v) + 1;
+            const isPath = isPathEdge(u, v, pathIds);
+            const weight = graph[u][v];
+            const mx = (locU.x + locV.x) / 2;
+            const my = (locU.y + locV.y) / 2;
             edgesHtml += `<line x1="${locU.x}" y1="${locU.y}" x2="${locV.x}" y2="${locV.y}"
             stroke="${isPath ? "#6366f1" : "#2a2a3a"}" stroke-width="${isPath ? 5 : 2}"
-            stroke-linecap="round" opacity="${isPath ? 1 : 0.5}"/>`;
+            stroke-linecap="round" opacity="${isPath ? 1 : 0.45}"/>`;
+            edgesHtml += `<text x="${mx}" y="${my - 4}" text-anchor="middle" fill="${isPath ? "#a5b4fc" : "#5a5a6e"}" font-size="9">${weight}</text>`;
           });
         });
 
@@ -339,8 +351,9 @@
           if (isStart) fill = "#22c55e";
           else if (isEnd) fill = "#ef4444";
           else if (onPath) fill = "#6366f1";
+          const label = window.getShortLabel(loc.id);
           nodesHtml += `<circle cx="${loc.x}" cy="${loc.y}" r="${onPath ? 14 : 10}" fill="${fill}" stroke="${onPath ? "#c4b5fd" : "transparent"}" stroke-width="2"/>`;
-          nodesHtml += `<text x="${loc.x}" y="${loc.y + 28}" text-anchor="middle" fill="#9898a8" font-size="11">${loc.name.split(" ")[0]}</text>`;
+          nodesHtml += `<text x="${loc.x}" y="${loc.y + 26}" text-anchor="middle" fill="#9898a8" font-size="10">${label}</text>`;
         });
 
         svg.innerHTML = `<rect width="800" height="700" fill="#12121a" rx="8"/>${edgesHtml}${nodesHtml}`;
