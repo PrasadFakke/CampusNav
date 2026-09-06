@@ -1,83 +1,189 @@
-// Auth check
+// Auth
 const token = localStorage.getItem('token');
 const user = JSON.parse(localStorage.getItem('user') || 'null');
-
 if (!token || !user) {
   window.location.href = '/';
 } else {
-  const name = user.username || 'Student';
-  document.getElementById('userName').textContent = name;
-  document.getElementById('avatar').textContent = name.charAt(0).toUpperCase();
+  document.getElementById('userName').textContent = user.username;
+  document.getElementById('avatar').textContent = user.username.charAt(0).toUpperCase();
 }
-
 document.getElementById('logoutBtn').addEventListener('click', () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
+  localStorage.clear();
   window.location.href = '/';
 });
 
-// Locations data (matching the map)
-const locations = [
-  { id: 'spit', name: 'SPIT', type: 'Institute' },
-  { id: 'spce', name: 'SPCE', type: 'College' },
-  { id: 'workshop', name: 'SPCE Workshop', type: 'Workshop' },
-  { id: 'library', name: 'Library', type: 'Facility' },
-  { id: 'lib-ext', name: 'Library Extension', type: 'Facility' },
-  { id: 'bhavans-college', name: "Bhavan's College", type: 'College' },
-  { id: 'cultural', name: "Bhavan's Cultural Centre", type: 'Cultural' },
-  { id: 'spjimr', name: 'SPJIMR', type: 'Institute' },
-  { id: 'spjimr-hostel', name: 'SPJIMR Hostel', type: 'Hostel' },
-  { id: 'hostel', name: 'Hostel', type: 'Hostel' },
-  { id: 'wadia', name: 'A. H. Wadia Highschool', type: 'School' },
-  { id: 'sports-complex', name: 'Sports Complex', type: 'Sports' },
-];
+const locations = window.CAMPUS_LOCATIONS;
+const graph = window.CAMPUS_GRAPH;
 
-let selectedId = null;
+let fromId = null;
+let toId = null;
+let currentPath = null;
 
-// Render location buttons
+// Draw graph edges
+function drawEdges(pathIds) {
+  const layer = document.getElementById('edgesLayer');
+  const pathSet = pathIds ? new Set(pathIds) : null;
+  const drawn = new Set();
+  let html = '';
+
+  Object.keys(graph).forEach(u => {
+    const locU = locations.find(l => l.id === u);
+    if (!locU) return;
+    Object.keys(graph[u] || {}).forEach(v => {
+      const key = [u, v].sort().join('-');
+      if (drawn.has(key)) return;
+      drawn.add(key);
+      const locV = locations.find(l => l.id === v);
+      if (!locV) return;
+
+      let isPath = false;
+      if (pathIds) {
+        for (let i = 0; i < pathIds.length - 1; i++) {
+          if ((pathIds[i] === u && pathIds[i + 1] === v) ||
+              (pathIds[i] === v && pathIds[i + 1] === u)) {
+            isPath = true;
+            break;
+          }
+        }
+      }
+
+      html += `<line x1="${locU.x}" y1="${locU.y}" x2="${locV.x}" y2="${locV.y}"
+        stroke="${isPath ? '#6366f1' : '#3a3a4a'}"
+        stroke-width="${isPath ? 5 : 2.5}"
+        stroke-linecap="round"
+        opacity="${isPath ? 1 : 0.55}"/>`;
+    });
+  });
+  layer.innerHTML = html;
+}
+
+// Draw nodes (buildings)
+function drawNodes() {
+  const layer = document.getElementById('nodesLayer');
+  let html = '';
+
+  locations.forEach(loc => {
+    if (loc.id === 'lake') return;
+
+    const isFrom = fromId === loc.id;
+    const isTo = toId === loc.id;
+    const onPath = currentPath && currentPath.includes(loc.id);
+
+    let fill = '#4b5563';
+    let stroke = 'transparent';
+    let strokeW = 0;
+    let r = 18;
+
+    if (isFrom) { fill = '#22c55e'; stroke = '#86efac'; strokeW = 3; r = 20; }
+    else if (isTo) { fill = '#ef4444'; stroke = '#fca5a5'; strokeW = 3; r = 20; }
+    else if (onPath) { fill = '#6366f1'; stroke = '#c4b5fd'; strokeW = 2; r = 18; }
+
+    const shortName = loc.name.length > 14 ? loc.name.split(' ')[0] : loc.name;
+
+    html += `
+      <g class="building-node" data-id="${loc.id}" style="cursor:pointer">
+        <circle cx="${loc.x}" cy="${loc.y}" r="${r}" fill="${fill}"
+          stroke="${stroke}" stroke-width="${strokeW}"/>
+        <text x="${loc.x}" y="${loc.y + r + 16}" text-anchor="middle"
+          fill="#e5e5ef" font-size="11" font-weight="500">${shortName}</text>
+      </g>`;
+  });
+
+  // Sports complex label area
+  html += `<rect x="620" y="420" width="100" height="35" rx="6" fill="#92400e" class="building-node" data-id="sports-complex" style="cursor:pointer"/>
+    <text x="670" y="442" text-anchor="middle" fill="white" font-size="11">Sports Complex</text>`;
+
+  layer.innerHTML = html;
+
+  document.querySelectorAll('.building-node').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = el.getAttribute('data-id') || el.dataset.id;
+      if (id) selectLocation(id);
+    });
+  });
+}
+
+function selectLocation(id) {
+  if (!fromId || (fromId && toId)) {
+    fromId = id;
+    toId = null;
+    currentPath = null;
+  } else if (id === fromId) {
+    return;
+  } else {
+    toId = id;
+  }
+
+  document.getElementById('fromName').textContent = fromId ? window.getLocationName(fromId) : 'Click a building';
+  document.getElementById('toName').textContent = toId ? window.getLocationName(toId) : 'Click another building';
+
+  const calcBtn = document.getElementById('calcBtn');
+  calcBtn.disabled = !(fromId && toId);
+
+  // Update route button link
+  if (fromId) {
+    document.getElementById('goRouteBtn').href = `/navigate.html?from=${fromId}${toId ? '&to=' + toId : ''}`;
+  }
+
+  document.getElementById('pathResult').style.display = 'none';
+  drawEdges(null);
+  drawNodes();
+}
+
+function calculatePath() {
+  if (!fromId || !toId) return;
+  const result = window.dijkstra(graph, fromId, toId);
+  const resultDiv = document.getElementById('pathResult');
+  const list = document.getElementById('pathList');
+  const badge = document.getElementById('pathBadge');
+
+  if (!result) {
+    badge.textContent = 'No path found';
+    list.innerHTML = '';
+    resultDiv.style.display = 'block';
+    return;
+  }
+
+  currentPath = result.path;
+  badge.textContent = `Dijkstra • Distance: ${result.distance} units`;
+  badge.style.cssText = 'display:inline-block;background:rgba(99,102,241,0.15);color:#a5b4fc;padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:500;';
+
+  list.innerHTML = result.path.map((id, i) => `
+    <li style="padding:8px 0;border-bottom:1px solid #2a2a3a;display:flex;align-items:center;gap:10px;">
+      <span style="width:24px;height:24px;background:rgba(99,102,241,0.2);color:#a5b4fc;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:600;">${i + 1}</span>
+      ${window.getLocationName(id)}
+    </li>
+  `).join('');
+
+  resultDiv.style.display = 'block';
+  drawEdges(result.path);
+  drawNodes();
+}
+
+document.getElementById('calcBtn').addEventListener('click', calculatePath);
+document.getElementById('clearBtn').addEventListener('click', () => {
+  fromId = null;
+  toId = null;
+  currentPath = null;
+  document.getElementById('fromName').textContent = 'Click a building';
+  document.getElementById('toName').textContent = 'Click another building';
+  document.getElementById('calcBtn').disabled = true;
+  document.getElementById('pathResult').style.display = 'none';
+  document.getElementById('goRouteBtn').href = '/navigate.html';
+  drawEdges(null);
+  drawNodes();
+});
+
+// Location buttons
 const locButtons = document.getElementById('locButtons');
-locations.forEach(loc => {
+locations.filter(l => l.id !== 'lake').forEach(loc => {
   const btn = document.createElement('button');
   btn.className = 'loc-btn';
   btn.textContent = loc.name;
-  btn.dataset.id = loc.id;
   btn.addEventListener('click', () => selectLocation(loc.id));
   locButtons.appendChild(btn);
 });
 
-// Select location
-function selectLocation(id) {
-  selectedId = id;
-  const loc = locations.find(l => l.id === id);
-  if (!loc) return;
-
-  // Update panel
-  const box = document.getElementById('selectedBox');
-  box.innerHTML = `
-    <div class="name">${loc.name}</div>
-    <div class="type">${loc.type}</div>
-  `;
-
-  // Highlight on SVG
-  document.querySelectorAll('.building').forEach(b => b.classList.remove('selected'));
-  const el = document.querySelector(`.building[data-id="${id}"]`);
-  if (el) el.classList.add('selected');
-
-  // Highlight button
-  document.querySelectorAll('.loc-btn').forEach(b => b.classList.remove('active'));
-  const btn = document.querySelector(`.loc-btn[data-id="${id}"]`);
-  if (btn) btn.classList.add('active');
-
-  // Update route button
-  const routeBtn = document.getElementById('routeBtn');
-  routeBtn.href = `/navigate.html?from=${id}`;
-  routeBtn.textContent = `Find Route from ${loc.name} →`;
-}
-
-// Click on SVG buildings
-document.querySelectorAll('.building').forEach(el => {
-  el.addEventListener('click', () => {
-    const id = el.dataset.id;
-    if (id) selectLocation(id);
-  });
-});
+// Initial draw
+drawEdges(null);
+drawNodes();
