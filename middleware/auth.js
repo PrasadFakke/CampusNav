@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'campusnav_secret_key_change_this';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 async function requireAuth(req, res, next) {
   try {
