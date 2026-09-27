@@ -124,17 +124,20 @@ window.dijkstra = function (graph, start, end) {
   return { path, distance: dist[end] };
 };
 
-/** BFS: nearest node whose id is in targetIds (unweighted hops). */
+/** BFS: nearest node whose id is in targetIds (unweighted hops). Skips missing/blocked neighbours. */
 window.bfsNearest = function (graph, start, targetIds) {
   const targets = new Set(targetIds);
+  if (!(start in graph)) return null;
   if (targets.has(start)) return { path: [start], hops: 0, id: start };
   const q = [start];
   const prev = { [start]: null };
   const seen = new Set([start]);
   while (q.length) {
     const u = q.shift();
-    for (const v of Object.keys(graph[u] || {})) {
-      if (seen.has(v)) continue;
+    const neighbors = Object.keys(graph[u] || {});
+    for (let i = 0; i < neighbors.length; i++) {
+      const v = neighbors[i];
+      if (seen.has(v) || !(v in graph)) continue;
       seen.add(v);
       prev[v] = u;
       if (targets.has(v)) {
@@ -150,6 +153,19 @@ window.bfsNearest = function (graph, start, targetIds) {
     }
   }
   return null;
+};
+
+/** Shortest walking facility of a type after blocked roads (Dijkstra, same as Find Route). */
+window.nearestByDistance = function (graph, start, targetIds) {
+  let best = null;
+  (targetIds || []).forEach((t) => {
+    const r = window.dijkstra(graph, start, t);
+    if (!r) return;
+    if (!best || r.distance < best.distance) {
+      best = { id: t, path: r.path, distance: r.distance };
+    }
+  });
+  return best;
 };
 
 window.getLocationName = function (id) {
