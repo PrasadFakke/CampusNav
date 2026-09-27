@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CampusNav • Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/dashboard.css" />
+  </head>
+  <body data-page="admin">
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1>Admin · Road closures</h1>
+          <p class="subtitle">
+            Block a pathway. Student routes then use Dijkstra on the remaining
+            graph.
+          </p>
+        </div>
+      </header>
+      <div class="card" id="gate">
+        <p class="empty">Checking admin access…</p>
+      </div>
+      <div class="card" id="panel" style="display: none; margin-top: 16px">
+        <div class="card-header"><h2>Pathways</h2></div>
+        <p class="subtitle" style="margin-bottom: 12px">
+          Tick a road to close it. Untick to reopen.
+        </p>
+        <div id="edgeList"></div>
+        <button class="btn primary" id="saveBtn" style="margin-top: 16px">
+          Save closures to MongoDB
+        </button>
+        <p id="saveMsg" class="subtitle" style="margin-top: 10px"></p>
+      </div>
+    </main>
+    <script src="/js/graph-data.js"></script>
+    <script src="/js/sidebar.js"></script>
+    <script src="/js/app.js"></script>
+    <script src="/js/admin.js"></script>
+  </body>
+</html>
