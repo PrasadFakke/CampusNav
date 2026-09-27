@@ -1,56 +1,36 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CampusNav • Emergency</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="/css/dashboard.css" />
-  </head>
-  <body data-page="emergency">
-    <main class="main">
-      <header class="topbar">
-        <div>
-          <h1>Emergency Route</h1>
-          <p class="subtitle">
-            Fastest Dijkstra path to Medical Centre or Security Office.
-          </p>
-        </div>
-      </header>
-      <div class="card">
-        <div class="field" style="margin-bottom: 16px">
-          <label>I am at</label>
-          <select id="fromSelect"></select>
-        </div>
-        <button class="emergency-btn" id="medBtn" type="button">
-          Fastest path to Medical Centre
-        </button>
-        <button
-          class="emergency-btn"
-          id="secBtn"
-          type="button"
-          style="background: linear-gradient(135deg, #1d4ed8, #6366f1)"
-        >
-          Fastest path to Security
-        </button>
-        <div
-          class="card"
-          style="margin-top: 16px; background: var(--bg)"
-          id="resultBox"
-        >
-          <div class="empty">
-            Choose your location, then tap an emergency button
-          </div>
-        </div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CampusNav • Emergency</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/dashboard.css" />
+</head>
+<body data-page="emergency">
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <h1>Emergency Route</h1>
+        <p class="subtitle">Fastest Dijkstra path to Medical Centre or Security Office.</p>
       </div>
-    </main>
-    <script src="/js/graph-data.js"></script>
-    <script src="/js/sidebar.js"></script>
-    <script src="/js/app.js"></script>
-    <script src="/js/emergency.js"></script>
-  </body>
+    </header>
+    <div class="card">
+      <div class="field" style="margin-bottom:16px;">
+        <label>I am at</label>
+        <select id="fromSelect"></select>
+      </div>
+      <button class="emergency-btn" id="medBtn" type="button">Fastest path to Medical Centre</button>
+      <button class="emergency-btn" id="secBtn" type="button" style="background:linear-gradient(135deg,#1d4ed8,#6366f1);">Fastest path to Security</button>
+      <div class="card" style="margin-top:16px;background:var(--bg);" id="resultBox">
+        <div class="empty">Choose your location, then tap an emergency button</div>
+      </div>
+    </div>
+  </main>
+  <script src="/js/graph-data.js"></script>
+  <script src="/js/sidebar.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/emergency.js"></script>
+</body>
 </html>

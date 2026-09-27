@@ -1,6 +1,4 @@
-// ========== CAMPUS GRAPH DATA (Phase 2) ==========
-// Positions tuned so labels don't overlap
-
+// ========== CAMPUS GRAPH DATA ==========
 window.CAMPUS_LOCATIONS = [
   { id: 'entrance', name: 'Main Entrance', type: 'Entrance', x: 400, y: 640 },
   { id: 'spit', name: 'SPIT', type: 'Institute', x: 80, y: 360 },
@@ -16,14 +14,16 @@ window.CAMPUS_LOCATIONS = [
   { id: 'wadia', name: 'A.H. Wadia Highschool', type: 'School', x: 500, y: 55 },
   { id: 'sports-complex', name: 'Sports Complex', type: 'Sports', x: 670, y: 520 },
   { id: 'playground', name: 'Playground', type: 'Sports', x: 670, y: 320 },
-  { id: 'lake', name: 'Lake', type: 'Landmark', x: 380, y: 260 }
+  { id: 'lake', name: 'Lake', type: 'Landmark', x: 380, y: 260 },
+  { id: 'canteen', name: 'Canteen', type: 'Canteen', x: 250, y: 520 },
+  { id: 'medical', name: 'Medical Centre', type: 'Medical', x: 455, y: 560 },
+  { id: 'security', name: 'Security Office', type: 'Emergency', x: 330, y: 640 }
 ];
 
-// Weighted adjacency list (walking distance units)
 window.CAMPUS_GRAPH = {
-  'entrance': { 'lib-ext': 4, 'spjimr': 5, 'library': 6, 'bhavans-college': 5 },
-  'lib-ext': { 'entrance': 4, 'spjimr': 3, 'spit': 5 },
-  'spjimr': { 'lib-ext': 3, 'entrance': 5, 'spce': 4, 'spit': 3 },
+  'entrance': { 'lib-ext': 4, 'spjimr': 5, 'library': 6, 'bhavans-college': 5, 'medical': 3, 'security': 2 },
+  'lib-ext': { 'entrance': 4, 'spjimr': 3, 'spit': 5, 'canteen': 2 },
+  'spjimr': { 'lib-ext': 3, 'entrance': 5, 'spce': 4, 'spit': 3, 'canteen': 2 },
   'spit': { 'spjimr': 3, 'spce': 2, 'workshop': 4, 'lib-ext': 5 },
   'spce': { 'spit': 2, 'spjimr': 4, 'bhavans-college': 3, 'workshop': 3, 'lake': 4 },
   'workshop': { 'spit': 4, 'spce': 3, 'hostel': 5 },
@@ -31,31 +31,80 @@ window.CAMPUS_GRAPH = {
   'spjimr-hostel': { 'hostel': 3, 'wadia': 4, 'cultural': 6, 'lake': 5 },
   'wadia': { 'spjimr-hostel': 4, 'cultural': 3 },
   'cultural': { 'wadia': 3, 'spjimr-hostel': 6, 'library': 5, 'playground': 4, 'lake': 6 },
-  'library': { 'entrance': 6, 'bhavans-college': 2, 'cultural': 5, 'playground': 3, 'lake': 4 },
-  'bhavans-college': { 'entrance': 5, 'spce': 3, 'library': 2, 'lake': 3 },
+  'library': { 'entrance': 6, 'bhavans-college': 2, 'cultural': 5, 'playground': 3, 'lake': 4, 'medical': 3 },
+  'bhavans-college': { 'entrance': 5, 'spce': 3, 'library': 2, 'lake': 3, 'canteen': 3 },
   'playground': { 'library': 3, 'cultural': 4, 'sports-complex': 2 },
   'sports-complex': { 'playground': 2 },
-  'lake': { 'spce': 4, 'spjimr-hostel': 5, 'cultural': 6, 'library': 4, 'bhavans-college': 3 }
+  'lake': { 'spce': 4, 'spjimr-hostel': 5, 'cultural': 6, 'library': 4, 'bhavans-college': 3 },
+  'canteen': { 'lib-ext': 2, 'spjimr': 2, 'bhavans-college': 3 },
+  'medical': { 'entrance': 3, 'library': 3, 'security': 3 },
+  'security': { 'entrance': 2, 'medical': 3 }
 };
 
-window.dijkstra = function(graph, start, end) {
+window.FACILITY_TYPES = {
+  Library: ['library', 'lib-ext'],
+  Canteen: ['canteen'],
+  Medical: ['medical'],
+  Washroom: ['library', 'spit', 'spce'],
+  Parking: ['entrance', 'sports-complex'],
+  Sports: ['playground', 'sports-complex'],
+  Hostel: ['hostel', 'spjimr-hostel'],
+  Emergency: ['medical', 'security', 'entrance']
+};
+
+window.EMERGENCY_TARGETS = ['medical', 'security'];
+
+window.edgeKey = function (u, v) {
+  return [u, v].sort().join('|');
+};
+
+window.graphWithoutBlocked = function (blockedKeys) {
+  const blocked = new Set(blockedKeys || []);
+  const g = {};
+  Object.keys(window.CAMPUS_GRAPH).forEach((u) => {
+    g[u] = {};
+    Object.keys(window.CAMPUS_GRAPH[u] || {}).forEach((v) => {
+      if (!blocked.has(window.edgeKey(u, v))) g[u][v] = window.CAMPUS_GRAPH[u][v];
+    });
+  });
+  return g;
+};
+
+window.allEdges = function () {
+  const drawn = new Set();
+  const edges = [];
+  Object.keys(window.CAMPUS_GRAPH).forEach((u) => {
+    Object.keys(window.CAMPUS_GRAPH[u] || {}).forEach((v) => {
+      const key = window.edgeKey(u, v);
+      if (drawn.has(key)) return;
+      drawn.add(key);
+      edges.push({ u, v, key, w: window.CAMPUS_GRAPH[u][v] });
+    });
+  });
+  return edges;
+};
+
+window.dijkstra = function (graph, start, end) {
   const dist = {};
   const prev = {};
   const pq = new Set(Object.keys(graph));
-
-  Object.keys(graph).forEach(n => { dist[n] = Infinity; prev[n] = null; });
+  Object.keys(graph).forEach((n) => {
+    dist[n] = Infinity;
+    prev[n] = null;
+  });
   if (!(start in graph) || !(end in graph)) return null;
   dist[start] = 0;
-
   while (pq.size > 0) {
     let u = null;
     let min = Infinity;
-    pq.forEach(n => {
-      if (dist[n] < min) { min = dist[n]; u = n; }
+    pq.forEach((n) => {
+      if (dist[n] < min) {
+        min = dist[n];
+        u = n;
+      }
     });
     if (u === null || u === end) break;
     pq.delete(u);
-
     const neighbors = graph[u] || {};
     for (const [v, w] of Object.entries(neighbors)) {
       const alt = dist[u] + w;
@@ -65,7 +114,6 @@ window.dijkstra = function(graph, start, end) {
       }
     }
   }
-
   const path = [];
   let cur = end;
   while (cur) {
@@ -76,29 +124,59 @@ window.dijkstra = function(graph, start, end) {
   return { path, distance: dist[end] };
 };
 
-window.getLocationName = function(id) {
-  const loc = window.CAMPUS_LOCATIONS.find(l => l.id === id);
+/** BFS: nearest node whose id is in targetIds (unweighted hops). */
+window.bfsNearest = function (graph, start, targetIds) {
+  const targets = new Set(targetIds);
+  if (targets.has(start)) return { path: [start], hops: 0, id: start };
+  const q = [start];
+  const prev = { [start]: null };
+  const seen = new Set([start]);
+  while (q.length) {
+    const u = q.shift();
+    for (const v of Object.keys(graph[u] || {})) {
+      if (seen.has(v)) continue;
+      seen.add(v);
+      prev[v] = u;
+      if (targets.has(v)) {
+        const path = [];
+        let cur = v;
+        while (cur) {
+          path.unshift(cur);
+          cur = prev[cur];
+        }
+        return { path, hops: path.length - 1, id: v };
+      }
+      q.push(v);
+    }
+  }
+  return null;
+};
+
+window.getLocationName = function (id) {
+  const loc = window.CAMPUS_LOCATIONS.find((l) => l.id === id);
   return loc ? loc.name : id;
 };
 
-// Short label for map (avoid "A" only)
-window.getShortLabel = function(id) {
+window.getShortLabel = function (id) {
   const map = {
-    'entrance': 'Main Entrance',
-    'spit': 'SPIT',
-    'spce': 'SPCE',
-    'workshop': 'Workshop',
-    'library': 'Library',
-    'lib-ext': 'Library Extension',
-    'bhavans-college': "Bhavan's College",
-    'cultural': 'Cultural Centre',
-    'spjimr': 'SPJIMR',
+    entrance: 'Main',
+    spit: 'SPIT',
+    spce: 'SPCE',
+    workshop: 'Workshop',
+    library: 'Library',
+    'lib-ext': 'Lib Ext',
+    'bhavans-college': "Bhavan's",
+    cultural: 'Cultural',
+    spjimr: 'SPJIMR',
     'spjimr-hostel': 'SPJIMR Hostel',
-    'hostel': 'Hostel',
-    'wadia': 'A. H. Wadia HS',
-    'sports-complex': 'Sports Complex',
-    'playground': 'Playground',
-    'lake': 'Lake'
+    hostel: 'Hostel',
+    wadia: 'Wadia HS',
+    'sports-complex': 'Sports',
+    playground: 'Playground',
+    lake: 'Lake',
+    canteen: 'Canteen',
+    medical: 'Medical',
+    security: 'Security'
   };
   return map[id] || id;
 };

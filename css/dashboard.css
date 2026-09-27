@@ -78,6 +78,104 @@ body {
 }
 
 .nav-item.disabled { opacity: 0.5; cursor: not-allowed; }
+.admin-only { display: none; }
+.btn.ghost {
+  background: #2a2a3a;
+  color: var(--text);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-family: var(--font);
+}
+.btn.danger {
+  background: #7f1d1d;
+  color: #fecaca;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font);
+}
+.btn.full { width: 100%; justify-content: center; }
+.fav-btn {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 8px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+.fav-btn.on { border-color: #fbbf24; color: #fbbf24; }
+.edge-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  font-size: 0.88rem;
+}
+.edge-row.blocked { border-color: #ef4444; background: rgba(239,68,68,0.08); }
+.edge-row input { accent-color: #ef4444; }
+.facility-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+.facility-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  cursor: pointer;
+  text-align: center;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+.facility-card:hover, .facility-card.active {
+  border-color: var(--primary);
+  background: rgba(99,102,241,0.1);
+}
+.emergency-btn {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #dc2626, #ea580c);
+  color: white;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+.field label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+.field select, .field input {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.95rem;
+  outline: none;
+}
+.empty { color: var(--muted); text-align: center; padding: 28px 0; }
+.blocked-tag {
+  font-size: 0.7rem;
+  background: rgba(239,68,68,0.2);
+  color: #fca5a5;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
 .nav-item .badge {
   margin-left: auto;
   font-size: 0.65rem;

@@ -51,6 +51,7 @@ body {
 .nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
 .nav-item.active { background: rgba(99, 102, 241, 0.15); color: #a5b4fc; }
 .nav-item.disabled { opacity: 0.5; cursor: not-allowed; }
+.admin-only { display: none; }
 .nav-item .badge {
   margin-left: auto; font-size: 0.65rem;
   background: #2a2a3a; padding: 2px 7px; border-radius: 6px; color: var(--muted);

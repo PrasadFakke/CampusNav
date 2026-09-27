@@ -1,136 +1,60 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CampusNav • Campus Map</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="/css/map.css" />
-  </head>
-  <body>
-    <aside class="sidebar">
-      <div class="sidebar-brand">
-        <div class="logo-icon">
-          <svg viewBox="0 0 48 48" fill="none">
-            <rect width="48" height="48" rx="12" fill="url(#g)" />
-            <path
-              d="M14 30 L24 12 L34 30"
-              stroke="white"
-              stroke-width="3"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-            <circle cx="24" cy="34" r="3" fill="white" />
-            <defs>
-              <linearGradient id="g" x1="0" y1="0" x2="48" y2="48">
-                <stop stop-color="#6366f1" />
-                <stop offset="1" stop-color="#8b5cf6" />
-              </linearGradient>
-            </defs>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CampusNav • Campus Map</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/map.css" />
+  <link rel="stylesheet" href="/css/dashboard.css" />
+</head>
+<body data-page="map">
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <h1>Campus Map</h1>
+        <p class="subtitle">Click From → To → Calculate. Red dashed = blocked road.</p>
+      </div>
+      <div class="topbar-actions">
+        <a href="/navigate.html" class="btn primary" id="goRouteBtn">Find Route →</a>
+      </div>
+    </header>
+    <div class="map-layout">
+      <div class="map-container">
+        <div class="map-canvas">
+          <svg viewBox="0 0 800 700" class="campus-svg" id="campusSvg">
+            <rect width="800" height="700" fill="#1a1a24" rx="16"/>
+            <g id="edgesLayer"></g>
+            <g id="nodesLayer"></g>
           </svg>
         </div>
-        <span>CampusNav</span>
       </div>
-      <nav class="sidebar-nav">
-        <a href="/dashboard.html" class="nav-item">Dashboard</a>
-        <a href="/map.html" class="nav-item active">Campus Map</a>
-        <a href="/navigate.html" class="nav-item">Find Route</a>
-        <a href="#" class="nav-item disabled"
-          >Favourites <span class="badge">Soon</span></a
-        >
-        <a href="#" class="nav-item disabled"
-          >Admin <span class="badge">Soon</span></a
-        >
-      </nav>
-      <div class="sidebar-footer">
-        <div class="user-card">
-          <div class="avatar" id="avatar">P</div>
-          <div>
-            <div class="user-name" id="userName">—</div>
-            <div class="user-role">Student</div>
-          </div>
+      <div class="info-panel">
+        <h2>Route Selection</h2>
+        <div class="selected-box" id="fromBox">
+          <div style="font-size:0.75rem;color:#9898a8;margin-bottom:4px;">FROM</div>
+          <div class="name" id="fromName">Click a building</div>
         </div>
-        <button class="logout-btn" id="logoutBtn">Logout</button>
+        <div class="selected-box" id="toBox" style="margin-top:10px;">
+          <div style="font-size:0.75rem;color:#9898a8;margin-bottom:4px;">TO</div>
+          <div class="name" id="toName">Click another building</div>
+        </div>
+        <button class="btn primary full" id="calcBtn" style="margin-top:14px;" disabled>Calculate Shortest Path</button>
+        <button class="btn ghost full" id="favBtn" style="margin-top:8px;" disabled>Save From as Favourite</button>
+        <button class="btn ghost full" id="clearBtn" style="margin-top:8px;">Clear Selection</button>
+        <div id="pathResult" style="margin-top:16px;display:none;">
+          <div class="algo-badge" id="pathBadge"></div>
+          <ul class="path-list" id="pathList" style="list-style:none;padding:0;margin-top:10px;"></ul>
+        </div>
+        <h3 style="margin-top:20px;">All Locations</h3>
+        <div class="loc-buttons" id="locButtons"></div>
       </div>
-    </aside>
-
-    <main class="main">
-      <header class="topbar">
-        <div>
-          <h1>Campus Map</h1>
-          <p class="subtitle">
-            Edge weights shown • Click From → To → Calculate
-          </p>
-        </div>
-        <div class="topbar-actions">
-          <a href="/navigate.html" class="btn primary" id="goRouteBtn"
-            >Find Route →</a
-          >
-        </div>
-      </header>
-
-      <div class="map-layout">
-        <div class="map-container">
-          <div class="map-canvas">
-            <svg viewBox="0 0 800 700" class="campus-svg" id="campusSvg">
-              <rect width="800" height="700" fill="#1a1a24" rx="16" />
-              <g id="edgesLayer"></g>
-              <g id="nodesLayer"></g>
-            </svg>
-          </div>
-        </div>
-
-        <div class="info-panel">
-          <h2>Route Selection</h2>
-          <div class="selected-box" id="fromBox">
-            <div style="font-size: 0.75rem; color: #9898a8; margin-bottom: 4px">
-              FROM
-            </div>
-            <div class="name" id="fromName">Click a building</div>
-          </div>
-          <div class="selected-box" id="toBox" style="margin-top: 10px">
-            <div style="font-size: 0.75rem; color: #9898a8; margin-bottom: 4px">
-              TO
-            </div>
-            <div class="name" id="toName">Click another building</div>
-          </div>
-
-          <button
-            class="btn primary full"
-            id="calcBtn"
-            style="margin-top: 14px"
-            disabled
-          >
-            Calculate Shortest Path
-          </button>
-          <button
-            class="btn full"
-            id="clearBtn"
-            style="margin-top: 8px; background: #2a2a3a; color: #f0f0f5"
-          >
-            Clear Selection
-          </button>
-
-          <div id="pathResult" style="margin-top: 16px; display: none">
-            <div class="algo-badge" id="pathBadge"></div>
-            <ul
-              class="path-list"
-              id="pathList"
-              style="list-style: none; padding: 0; margin-top: 10px"
-            ></ul>
-          </div>
-
-          <h3 style="margin-top: 20px">All Locations</h3>
-          <div class="loc-buttons" id="locButtons"></div>
-        </div>
-      </div>
-    </main>
-
-    <script src="/js/graph-data.js"></script>
-    <script src="/js/map.js"></script>
-  </body>
+    </div>
+  </main>
+  <script src="/js/graph-data.js"></script>
+  <script src="/js/sidebar.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/map.js"></script>
+</body>
 </html>

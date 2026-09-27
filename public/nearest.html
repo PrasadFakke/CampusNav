@@ -1,53 +1,37 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CampusNav • Nearest Facility</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="/css/dashboard.css" />
-  </head>
-  <body data-page="nearest">
-    <main class="main">
-      <header class="topbar">
-        <div>
-          <h1>Nearest Facility</h1>
-          <p class="subtitle">
-            BFS finds the closest facility by number of hops on the campus
-            graph.
-          </p>
-        </div>
-      </header>
-      <div class="card">
-        <div class="field" style="margin-bottom: 16px">
-          <label>I am at</label>
-          <select id="fromSelect"></select>
-        </div>
-        <p class="subtitle" style="margin-bottom: 10px">Find nearest</p>
-        <div class="facility-grid" id="typeGrid"></div>
-        <button
-          class="btn primary"
-          id="findBtn"
-          style="width: 100%; margin-top: 18px"
-        >
-          Find with BFS
-        </button>
-        <div
-          class="card"
-          style="margin-top: 18px; background: var(--bg)"
-          id="resultBox"
-        >
-          <div class="empty">Pick your location and a facility type</div>
-        </div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CampusNav • Nearest Facility</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/dashboard.css" />
+</head>
+<body data-page="nearest">
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <h1>Nearest Facility</h1>
+        <p class="subtitle">BFS finds the closest facility by number of hops on the campus graph.</p>
       </div>
-    </main>
-    <script src="/js/graph-data.js"></script>
-    <script src="/js/sidebar.js"></script>
-    <script src="/js/app.js"></script>
-    <script src="/js/nearest.js"></script>
-  </body>
+    </header>
+    <div class="card">
+      <div class="field" style="margin-bottom:16px;">
+        <label>I am at</label>
+        <select id="fromSelect"></select>
+      </div>
+      <p class="subtitle" style="margin-bottom:10px;">Find nearest</p>
+      <div class="facility-grid" id="typeGrid"></div>
+      <button class="btn primary" id="findBtn" style="width:100%;margin-top:18px;">Find with BFS</button>
+      <div class="card" style="margin-top:18px;background:var(--bg);" id="resultBox">
+        <div class="empty">Pick your location and a facility type</div>
+      </div>
+    </div>
+  </main>
+  <script src="/js/graph-data.js"></script>
+  <script src="/js/sidebar.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/nearest.js"></script>
+</body>
 </html>
