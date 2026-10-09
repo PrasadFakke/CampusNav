@@ -5,27 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CampusNav • Nearest Facility</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/dashboard.css" />
 </head>
 <body data-page="nearest">
   <main class="main">
     <header class="topbar">
       <div>
-        <h1>Nearest Facility</h1>
-        <p class="subtitle">BFS finds the closest facility by number of hops on the campus graph.</p>
+        <h1>Nearest Facility Finder</h1>
+        <p class="subtitle">BFS (Breadth-First Search) finds the closest facility by number of graph hops.</p>
       </div>
     </header>
     <div class="card">
-      <div class="field" style="margin-bottom:16px;">
-        <label>I am at</label>
+      <div class="field" style="margin-bottom:18px;">
+        <label>Current Location (I am at)</label>
         <select id="fromSelect"></select>
       </div>
-      <p class="subtitle" style="margin-bottom:10px;">Find nearest</p>
+      <p style="font-size:0.85rem;font-weight:700;color:var(--text);margin-bottom:12px;">Choose Facility Type:</p>
       <div class="facility-grid" id="typeGrid"></div>
-      <button class="btn primary" id="findBtn" style="width:100%;margin-top:18px;">Find with BFS</button>
-      <div class="card" style="margin-top:18px;background:var(--bg);" id="resultBox">
-        <div class="empty">Pick your location and a facility type</div>
+      <button class="btn primary" id="findBtn" style="width:100%;margin-top:20px;">Find with BFS</button>
+      <div class="card" style="margin-top:20px;background:var(--bg-subtle);border:1.5px solid var(--border);" id="resultBox">
+        <div class="empty">Pick your location and a facility type above</div>
       </div>
     </div>
   </main>

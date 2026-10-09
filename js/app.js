@@ -51,5 +51,25 @@ window.CampusApp = {
     }
     if (!res.ok) throw new Error(data.message || 'Request failed');
     return data;
+  },
+  toast(message, type = 'info') {
+    let container = document.getElementById('toastContainer');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'toastContainer';
+      container.className = 'toast-container';
+      document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    const icon = type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ';
+    toast.innerHTML = `<span style="font-weight:700;">${icon}</span> <span>${message}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(10px)';
+      toast.style.transition = 'all 0.3s ease';
+      setTimeout(() => toast.remove(), 300);
+    }, 3200);
   }
 };

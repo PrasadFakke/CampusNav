@@ -5,26 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CampusNav • Emergency</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/dashboard.css" />
 </head>
 <body data-page="emergency">
   <main class="main">
     <header class="topbar">
       <div>
-        <h1>Emergency Route</h1>
-        <p class="subtitle">Fastest Dijkstra path to Medical Centre or Security Office.</p>
+        <h1>Emergency Route Assistance</h1>
+        <p class="subtitle">Immediate priority route calculation directly to Medical Centre or Campus Security.</p>
       </div>
     </header>
     <div class="card">
-      <div class="field" style="margin-bottom:16px;">
-        <label>I am at</label>
+      <div class="field" style="margin-bottom:20px;">
+        <label>Current Location (I am currently at)</label>
         <select id="fromSelect"></select>
       </div>
-      <button class="emergency-btn" id="medBtn" type="button">Fastest path to Medical Centre</button>
-      <button class="emergency-btn" id="secBtn" type="button" style="background:linear-gradient(135deg,#1d4ed8,#6366f1);">Fastest path to Security</button>
-      <div class="card" style="margin-top:16px;background:var(--bg);" id="resultBox">
-        <div class="empty">Choose your location, then tap an emergency button</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:12px;">
+        <button class="emergency-btn" id="medBtn" type="button" style="margin-bottom:0;">
+          🏥 Emergency: Medical Centre
+        </button>
+        <button class="emergency-btn" id="secBtn" type="button" style="background:linear-gradient(135deg,#2563eb,#4f46e5);margin-bottom:0;">
+          🛡️ Emergency: Security Office
+        </button>
+      </div>
+      <div class="card" style="margin-top:20px;background:var(--bg-subtle);border:1.5px solid var(--border);" id="resultBox">
+        <div class="empty">Choose your location above, then tap an emergency button for immediate routing</div>
       </div>
     </div>
   </main>
