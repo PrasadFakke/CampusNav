@@ -3,28 +3,38 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CampusNav • Admin</title>
+  <title>CampusNav • Admin Controls</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/dashboard.css" />
 </head>
 <body data-page="admin">
   <main class="main">
     <header class="topbar">
       <div>
-        <h1>Admin · Road closures</h1>
-        <p class="subtitle">Block a pathway. Student routes then use Dijkstra on the remaining graph.</p>
+        <h1>Campus Pathway Admin Controls</h1>
+        <p class="subtitle">Simulate real-time construction or road closures. Student routes dynamically bypass blocked edges.</p>
       </div>
     </header>
     <div class="card" id="gate">
-      <p class="empty">Checking admin access…</p>
+      <p class="empty">Authenticating administrative privileges…</p>
     </div>
-    <div class="card" id="panel" style="display:none;margin-top:16px;">
-      <div class="card-header"><h2>Pathways</h2></div>
-      <p class="subtitle" style="margin-bottom:12px;">Tick a road to close it. Untick to reopen.</p>
-      <div id="edgeList"></div>
-      <button class="btn primary" id="saveBtn" style="margin-top:16px;">Save closures to MongoDB</button>
-      <p id="saveMsg" class="subtitle" style="margin-top:10px;"></p>
+    <div class="card" id="panel" style="display:none;">
+      <div class="card-header">
+        <h2>Campus Pathways & Roads</h2>
+        <span class="system-badge" id="blockedCounter">0 Roads Blocked</span>
+      </div>
+      <p class="subtitle" style="margin-bottom:14px;">Select a road to mark it as closed/under maintenance. Deselect to restore traffic.</p>
+      <div class="search-bar">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" id="edgeSearch" placeholder="Search pathways by location name..." />
+      </div>
+      <div id="edgeList" style="max-height:420px;overflow-y:auto;padding-right:4px;"></div>
+      <button class="btn primary" id="saveBtn" style="margin-top:20px;width:100%;">Save Road Closures to Database</button>
+      <p id="saveMsg" class="subtitle" style="margin-top:12px;font-weight:600;text-align:center;"></p>
     </div>
   </main>
   <script src="/js/graph-data.js"></script>

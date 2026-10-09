@@ -1,31 +1,60 @@
-
 const user = window.CampusApp.requireAuth();
 const gate = document.getElementById('gate');
 const panel = document.getElementById('panel');
 
 if (!user || user.role !== 'admin') {
   gate.innerHTML =
-    '<p>Admin only. Login as <strong>admin</strong> / <strong>Admin@123</strong> (auto-created on first server start).</p>';
+    '<div class="empty" style="color:#ef4444;font-weight:600;"><p>Admin access restricted.</p><p style="margin-top:8px;font-size:0.85rem;color:var(--muted);">Sign in with <strong>admin</strong> / <strong>Admin@123</strong> to manage campus pathways.</p></div>';
 } else {
   gate.style.display = 'none';
   panel.style.display = 'block';
   let selected = new Set();
   let saved = new Set();
+  let edgeFilter = '';
+
+  function updateCounter() {
+    const counter = document.getElementById('blockedCounter');
+    if (counter) {
+      counter.textContent = `${selected.size} Road${selected.size === 1 ? '' : 's'} Blocked`;
+      if (selected.size > 0) {
+        counter.style.background = '#fef2f2';
+        counter.style.color = '#dc2626';
+        counter.style.borderColor = '#fecaca';
+      } else {
+        counter.style.background = '#ecfdf5';
+        counter.style.color = '#059669';
+        counter.style.borderColor = '#a7f3d0';
+      }
+    }
+  }
 
   function renderEdges() {
     const box = document.getElementById('edgeList');
-    box.innerHTML = window
-      .allEdges()
+    const all = window.allEdges();
+    const filtered = all.filter((e) => {
+      const uName = window.getLocationName(e.u).toLowerCase();
+      const vName = window.getLocationName(e.v).toLowerCase();
+      return !edgeFilter || uName.includes(edgeFilter) || vName.includes(edgeFilter);
+    });
+
+    if (!filtered.length) {
+      box.innerHTML = '<div class="empty">No matching pathways found</div>';
+      return;
+    }
+
+    box.innerHTML = filtered
       .map((e) => {
-        const checked = selected.has(e.key) ? 'checked' : '';
-        const label = `${window.getLocationName(e.u)} ↔ ${window.getLocationName(e.v)}  (${e.w})`;
-        return `<label class="edge-row ${selected.has(e.key) ? 'blocked' : ''}">
+        const isChecked = selected.has(e.key);
+        const checked = isChecked ? 'checked' : '';
+        const label = `${window.getLocationName(e.u)} ↔ ${window.getLocationName(e.v)} (${e.w} units)`;
+        return `<label class="edge-row ${isChecked ? 'blocked' : ''}">
           <input type="checkbox" data-key="${e.key}" ${checked}/>
           <span>${label}</span>
-          ${selected.has(e.key) ? '<span class="blocked-tag">BLOCKED</span>' : ''}
+          ${isChecked ? '<span class="blocked-tag">BLOCKED</span>' : ''}
         </label>`;
       })
       .join('');
+
     box.querySelectorAll('input').forEach((input) => {
       input.onchange = () => {
         if (input.checked) selected.add(input.dataset.key);
@@ -40,15 +69,27 @@ if (!user || user.role !== 'admin') {
         } else if (!input.checked && tag) {
           tag.remove();
         }
+        updateCounter();
       };
+    });
+    updateCounter();
+  }
+
+  const searchInput = document.getElementById('edgeSearch');
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      edgeFilter = e.target.value.trim().toLowerCase();
+      renderEdges();
     });
   }
 
   (async () => {
-    const campus = await window.CampusApp.api('/api/campus/blocked');
-    selected = new Set(campus.blockedEdges || []);
-    saved = new Set(campus.blockedEdges || []);
-    renderEdges();
+    try {
+      const campus = await window.CampusApp.api('/api/campus/blocked');
+      selected = new Set(campus.blockedEdges || []);
+      saved = new Set(campus.blockedEdges || []);
+      renderEdges();
+    } catch (_) {}
   })();
 
   document.getElementById('saveBtn').onclick = async () => {
@@ -64,21 +105,24 @@ if (!user || user.role !== 'admin') {
       saved = new Set(selected);
 
       const msg = document.getElementById('saveMsg');
+      let statusText = 'Changes saved successfully.';
       if (opened.length && !closed.length && selected.size === 0) {
-        msg.textContent = 'Saved. Roads reopened — students can use this path again.';
+        statusText = 'Saved: All roads reopened for student navigation.';
       } else if (opened.length && !closed.length) {
-        msg.textContent = 'Saved. Unblocked road is open again — students can use this path.';
+        statusText = `Saved: ${opened.length} road(s) unblocked and back in service.`;
       } else if (closed.length && !opened.length) {
-        msg.textContent = 'Saved. Students will now find an alternative route on Find Route.';
-      } else if (opened.length && closed.length) {
-        msg.textContent = 'Saved. Closed roads use alternatives; reopened roads students can use again.';
-      } else if (selected.size) {
-        msg.textContent = 'Saved. Students still use alternatives for the blocked roads.';
-      } else {
-        msg.textContent = 'Saved. No roads blocked — students can use all paths.';
+        statusText = `Saved: ${closed.length} road(s) closed. Navigation will automatically detour.`;
+      } else if (closed.length || opened.length) {
+        statusText = `Saved: ${closed.length} road(s) closed, ${opened.length} reopened.`;
       }
+      msg.textContent = statusText;
+      msg.style.color = '#10b981';
+      window.CampusApp.toast(statusText, 'success');
     } catch (err) {
-      document.getElementById('saveMsg').textContent = err.message;
+      const msg = document.getElementById('saveMsg');
+      msg.textContent = err.message;
+      msg.style.color = '#ef4444';
+      window.CampusApp.toast(err.message, 'error');
     }
   };
 }

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CampusNav • Inside Building</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/dashboard.css" />
+  <link rel="stylesheet" href="/css/map.css" />
+  <style>
+    .indoor-svg { width: 100%; max-width: 1000px; height: auto; animation: zoomIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); transform-origin: center center; }
+    @keyframes zoomIn { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .floor-tag { display: inline-block; background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary-border); padding: 4px 10px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; margin-left: 10px; vertical-align: middle; }
+    .step-row { padding: 10px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; font-size: 0.9rem; font-weight: 600; color: var(--text); }
+    .step-row .n { width: 28px; height: 28px; background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary-border); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.82rem; font-weight: 700; flex-shrink: 0; }
+    .step-row .d { margin-left: auto; color: var(--muted); font-size: 0.8rem; font-weight: 600; white-space: nowrap; }
+    .indoor-node { cursor: pointer; }
+    .room-hit { cursor: pointer; }
+  </style>
+</head>
+<body data-page="map">
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <h1><span id="bName">Inside Building</span><span class="floor-tag" id="bFloor"></span></h1>
+        <p class="subtitle">Click From room → To room → Calculate shortest indoor path.</p>
+      </div>
+      <div class="topbar-actions">
+        <a href="/map.html" class="btn primary">← Back to Campus Map</a>
+      </div>
+    </header>
+    <div class="map-layout">
+      <div class="map-container">
+        <div class="map-canvas">
+          <svg class="indoor-svg" id="indoorSvg" viewBox="0 0 990 420"></svg>
+        </div>
+      </div>
+      <div class="info-panel">
+        <h2>Indoor Route</h2>
+        <div class="selected-box" id="fromBox">
+          <div style="font-size:0.75rem;color:var(--muted);font-weight:700;margin-bottom:2px;">FROM (START)</div>
+          <div class="name" id="fromName">Click a room</div>
+        </div>
+        <div class="selected-box" id="toBox">
+          <div style="font-size:0.75rem;color:var(--muted);font-weight:700;margin-bottom:2px;">TO (DESTINATION)</div>
+          <div class="name" id="toName">Click another room</div>
+        </div>
+        <button class="btn primary full" id="calcBtn" disabled>Calculate Shortest Path</button>
+        <button class="btn ghost full" id="clearBtn">Clear Selection</button>
+        <div id="pathResult" style="margin-top:14px;display:none;">
+          <div class="algo-badge" id="pathBadge"></div>
+          <div id="pathList" style="margin-top:12px;"></div>
+        </div>
+        <div style="margin-top:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <h3>Rooms & Labs</h3>
+          </div>
+          <div class="search-bar">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="roomSearch" placeholder="Search rooms..." />
+          </div>
+          <div class="loc-buttons" id="locButtons"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script src="/js/graph-data.js"></script>
+  <script src="/js/indoor-data.js"></script>
+  <script src="/js/sidebar.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/indoor.js"></script>
+</body>
+</html>

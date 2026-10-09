@@ -1,5 +1,6 @@
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ===== Map & Indoor Interactive Layout Styles ===== */
 
+<<<<<<< Updated upstream
 :root {
   --bg: #0f0f13;
   --sidebar: #14141c;
@@ -110,18 +111,30 @@ body {
   display: grid;
   grid-template-columns: 1fr 300px;
   gap: 20px;
+=======
+/* Map Layout Grid - Full desktop width, fluid & responsive */
+.map-layout {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 24px;
+>>>>>>> Stashed changes
   flex: 1;
+  width: 100%;
+  align-items: stretch;
 }
 
 .map-container {
-  background: var(--card);
+  background: #ffffff;
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 20px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 560px;
+  min-height: 600px;
+  height: 100%;
+  box-shadow: var(--shadow-sm);
+  position: relative;
 }
 
 .map-canvas {
@@ -130,96 +143,177 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 12px;
+  padding: 20px;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
 }
 
 .campus-svg {
   width: 100%;
-  max-width: 820px;
+  max-width: 100%;
   height: auto;
+  max-height: 80vh;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
 }
 
-.building {
+/* SVG Interactive Nodes - completely stationary (strictly NO movement or scale on hover/click) */
+.building-node {
   cursor: pointer;
-  transition: all 0.2s;
-  stroke: transparent;
-  stroke-width: 2;
-}
-.building:hover {
-  filter: brightness(1.25);
-  stroke: #a5b4fc;
-}
-.building.selected {
-  fill: #6366f1 !important;
-  stroke: #c4b5fd;
-  stroke-width: 3;
-}
-.building.highlight {
-  fill: #4f46e5;
+  transform: none !important;
 }
 
-.you-are-here {
-  animation: pulse 1.8s ease-in-out infinite;
-}
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.55; }
+.building-node:hover {
+  transform: none !important;
 }
 
-/* Info Panel */
+.building-node:hover circle:first-child {
+  stroke-width: 3.5px;
+  filter: drop-shadow(0 0 6px rgba(79, 70, 229, 0.5));
+}
+
+.indoor-node {
+  cursor: pointer;
+  transform: none !important;
+}
+
+.indoor-node:hover {
+  transform: none !important;
+}
+
+.indoor-node:hover circle:first-child {
+  stroke-width: 3.5px;
+  filter: drop-shadow(0 0 6px rgba(79, 70, 229, 0.5));
+}
+
+.room-hit {
+  cursor: pointer;
+}
+
+.building-node text,
+.indoor-node text {
+  user-select: none;
+  pointer-events: none;
+  font-family: var(--font);
+}
+
+/* Flowing dash animation on calculated active path */
+@keyframes flowPath {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.path-edge-animated {
+  stroke-dasharray: 8 4;
+  animation: flowPath 0.8s linear infinite;
+}
+
+/* Info Panel Sidebar */
 .info-panel {
-  background: var(--card);
+  background: #ffffff;
   border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: 20px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  box-shadow: var(--shadow-sm);
+  height: 100%;
 }
 
-.info-panel h2 { font-size: 1.05rem; font-weight: 600; }
-.info-panel h3 { font-size: 0.9rem; font-weight: 600; color: var(--muted); margin-top: 4px; }
+.info-panel h2 {
+  font-size: 1.18rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.info-panel h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin-top: 6px;
+}
 
 .selected-box {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px;
-  min-height: 70px;
+  background: var(--bg-subtle);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  min-height: 64px;
+  transition: border-color 0.2s, background 0.2s;
 }
-.selected-box .placeholder { color: var(--muted); font-size: 0.9rem; }
-.selected-box .name { font-size: 1.1rem; font-weight: 600; margin-bottom: 4px; }
-.selected-box .type { font-size: 0.8rem; color: var(--muted); }
 
+.selected-box:hover {
+  border-color: #cbd5e1;
+}
+
+.selected-box.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.selected-box .name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-top: 2px;
+}
+
+/* Location Selector Buttons */
 .loc-buttons {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-height: 320px;
+  max-height: 280px;
   overflow-y: auto;
+  padding-right: 4px;
 }
 
 .loc-btn {
   text-align: left;
-  padding: 10px 12px;
-  background: var(--bg);
+  padding: 11px 14px;
+  background: var(--bg-subtle);
   border: 1px solid transparent;
-  border-radius: 9px;
+  border-radius: 10px;
   color: var(--text);
   font-family: var(--font);
-  font-size: 0.85rem;
+  font-size: 0.88rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
 }
-.loc-btn:hover { border-color: var(--border); background: rgba(99,102,241,0.08); }
+
+.loc-btn:hover {
+  background: #ffffff;
+  border-color: var(--border);
+  color: var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+
 .loc-btn.active {
   border-color: var(--primary);
-  background: rgba(99,102,241,0.15);
-  color: #a5b4fc;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 800;
 }
 
-.panel-actions { margin-top: auto; }
+/* Algorithm Badges & Path Lists */
+.algo-badge {
+  display: inline-block;
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid var(--primary-border);
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
 
+<<<<<<< Updated upstream
 @media (max-width: 1100px) {
   .map-layout { grid-template-columns: 1fr; }
   .info-panel { order: -1; }
@@ -227,4 +321,46 @@ body {
 @media (max-width: 768px) {
   .sidebar { display: none; }
   .main { margin-left: 0; }
+=======
+.path-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 10px;
+}
+
+.path-list li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.step-num {
+  width: 28px;
+  height: 28px;
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid var(--primary-border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* Responsive */
+@media (max-width: 1180px) {
+  .map-layout {
+    grid-template-columns: 1fr;
+  }
+  .info-panel {
+    order: 2;
+  }
+>>>>>>> Stashed changes
 }
