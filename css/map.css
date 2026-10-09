@@ -78,6 +78,8 @@ body {
 .main {
   margin-left: 260px;
   flex: 1;
+  min-width: 0;
+  width: calc(100% - 260px);
   padding: 24px 28px;
   display: flex;
   flex-direction: column;
@@ -108,7 +110,7 @@ body {
 /* Map Layout */
 .map-layout {
   display: grid;
-  grid-template-columns: 1fr 300px;
+  grid-template-columns: minmax(0, 1fr) 300px;
   gap: 20px;
   flex: 1;
 }
@@ -221,10 +223,10 @@ body {
 .panel-actions { margin-top: auto; }
 
 @media (max-width: 1100px) {
-  .map-layout { grid-template-columns: 1fr; }
+  .map-layout { grid-template-columns: minmax(0, 1fr); }
   .info-panel { order: -1; }
 }
 @media (max-width: 768px) {
   .sidebar { display: none; }
-  .main { margin-left: 0; }
+  .main { margin-left: 0; width: 100%; }
 }
