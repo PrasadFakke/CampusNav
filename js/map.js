@@ -6,6 +6,7 @@ let fromId = null;
 let toId = null;
 let currentPath = null;
 let favourites = [];
+let focusId = null; // last clicked building (used for the "Enter building" option)
 
 function liveGraph() {
   return window.graphWithoutBlocked(blocked);
@@ -86,20 +87,62 @@ function drawNodes() {
     html += `<g class="building-node" data-id="${loc.id}" style="cursor:pointer">
       <circle cx="${loc.x}" cy="${loc.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeW}"/>
       <text x="${loc.x}" y="${loc.y + r + 14}" text-anchor="middle" fill="#e5e5ef" font-size="11" font-weight="500">${window.getShortLabel(loc.id)}</text>
+      ${window.hasIndoorMap(loc.id) ? `<circle cx="${loc.x + 13}" cy="${loc.y - 13}" r="7" fill="#f59e0b" stroke="#1a1a24" stroke-width="2"/><text x="${loc.x + 13}" y="${loc.y - 9.5}" text-anchor="middle" fill="#1a1a24" font-size="10" font-weight="700" pointer-events="none">i</text>` : ''}
     </g>`;
   });
+  // "Enter building" pop-up above the clicked node (only for buildings with an indoor map)
+  if (focusId && window.hasIndoorMap(focusId)) {
+    const f = locations.find((l) => l.id === focusId);
+    const plan = window.INDOOR_PLANS[focusId];
+    const label = 'Enter ' + plan.shortName + ' ▸';
+    const w = label.length * 7.5 + 22;
+    const px = Math.min(Math.max(f.x, w / 2 + 6), 800 - w / 2 - 6);
+    const py = f.y - 52;
+    html += `<g class="enter-pop" data-building="${focusId}" style="cursor:pointer">
+      <rect x="${px - w / 2}" y="${py - 15}" width="${w}" height="30" rx="15" fill="#f59e0b" stroke="#fde68a" stroke-width="2"/>
+      <text x="${px}" y="${py + 5}" text-anchor="middle" fill="#1a1a24" font-size="13" font-weight="700">${label}</text>
+      <path d="M${f.x - 6} ${py + 15} L${f.x} ${py + 24} L${f.x + 6} ${py + 15} Z" fill="#f59e0b"/>
+    </g>`;
+  }
   layer.innerHTML = html;
+  document.querySelectorAll('.enter-pop').forEach((el) => {
+    el.addEventListener('click', () => enterBuilding(el.getAttribute('data-building')));
+  });
   document.querySelectorAll('.building-node').forEach((el) => {
     el.addEventListener('click', () => selectLocation(el.getAttribute('data-id')));
+    el.addEventListener('dblclick', () => {
+      const id = el.getAttribute('data-id');
+      if (window.hasIndoorMap(id)) enterBuilding(id);
+    });
   });
 }
 
+function enterBuilding(id) {
+  window.location.href = '/indoor.html?building=' + encodeURIComponent(id);
+}
+
+function updateBuildingAction() {
+  const box = document.getElementById('buildingAction');
+  if (!box) return;
+  if (focusId && window.hasIndoorMap(focusId)) {
+    const plan = window.INDOOR_PLANS[focusId];
+    document.getElementById('buildingActionName').textContent = plan.name;
+    document.getElementById('enterBuildingBtn').onclick = () => enterBuilding(focusId);
+    box.style.display = 'block';
+  } else {
+    box.style.display = 'none';
+  }
+}
+
 function selectLocation(id) {
+  focusId = id;
+  updateBuildingAction();
   if (!fromId || (fromId && toId)) {
     fromId = id;
     toId = null;
     currentPath = null;
   } else if (id === fromId) {
+    drawNodes();
     return;
   } else {
     toId = id;
@@ -151,6 +194,8 @@ function calculatePath() {
 
 document.getElementById('calcBtn').addEventListener('click', calculatePath);
 document.getElementById('clearBtn').addEventListener('click', () => {
+  focusId = null;
+  updateBuildingAction();
   fromId = null;
   toId = null;
   currentPath = null;
