@@ -6,7 +6,8 @@ let fromId = null;
 let toId = null;
 let currentPath = null;
 let favourites = [];
-let focusId = null; // last clicked building (used for the "Enter building" option)
+let focusId = null;
+let searchQuery = '';
 
 function liveGraph() {
   return window.graphWithoutBlocked(blocked);
@@ -23,8 +24,10 @@ function isPathEdge(u, v, pathIds) {
 
 function drawEdges(pathIds) {
   const layer = document.getElementById('edgesLayer');
+  if (!layer) return;
   const drawn = new Set();
   let html = '';
+
   Object.keys(window.CAMPUS_GRAPH).forEach((u) => {
     const locU = locations.find((l) => l.id === u);
     if (!locU) return;
@@ -39,75 +42,109 @@ function drawEdges(pathIds) {
       const isPath = !isBlocked && isPathEdge(u, v, pathIds);
       const mx = (locU.x + locV.x) / 2;
       const my = (locU.y + locV.y) / 2;
+
+      const strokeColor = isBlocked ? '#ef4444' : isPath ? '#4f46e5' : '#cbd5e1';
+      const strokeWidth = isPath ? 5.5 : 2.5;
+      const animClass = isPath ? 'class="path-edge-animated"' : '';
+      const dashArray = isBlocked ? '7 5' : '0';
+      const opacity = isBlocked ? 0.95 : isPath ? 1 : 0.7;
+
       html += `<line x1="${locU.x}" y1="${locU.y}" x2="${locV.x}" y2="${locV.y}"
-        stroke="${isBlocked ? '#ef4444' : isPath ? '#6366f1' : '#3a3a4a'}"
-        stroke-width="${isPath ? 5 : 2}" stroke-linecap="round"
-        stroke-dasharray="${isBlocked ? '7 5' : '0'}"
-        opacity="${isBlocked ? 0.9 : isPath ? 1 : 0.5}"/>`;
-      html += `<circle cx="${mx}" cy="${my}" r="10" fill="${isPath ? '#312e81' : '#1a1a24'}" stroke="${isBlocked ? '#ef4444' : isPath ? '#818cf8' : '#3a3a4a'}" stroke-width="1"/>`;
-      html += `<text x="${mx}" y="${my + 3.5}" text-anchor="middle" fill="${isBlocked ? '#fca5a5' : isPath ? '#c4b5fd' : '#9898a8'}" font-size="10" font-weight="600">${isBlocked ? 'X' : weight}</text>`;
+        stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="round"
+        stroke-dasharray="${dashArray}" opacity="${opacity}" ${animClass}/>`;
+
+      const circleFill = isPath ? '#4f46e5' : isBlocked ? '#fef2f2' : '#ffffff';
+      const circleStroke = isBlocked ? '#ef4444' : isPath ? '#4338ca' : '#cbd5e1';
+      const textColor = isPath ? '#ffffff' : isBlocked ? '#dc2626' : '#475569';
+
+      html += `<circle cx="${mx}" cy="${my}" r="11" fill="${circleFill}" stroke="${circleStroke}" stroke-width="1.5" filter="drop-shadow(0 1px 2px rgba(0,0,0,0.06))"/>`;
+      html += `<text x="${mx}" y="${my + 4}" text-anchor="middle" fill="${textColor}" font-size="10.5" font-weight="700">${isBlocked ? '✕' : weight}</text>`;
     });
   });
+
   layer.innerHTML = html;
 }
 
 function drawNodes() {
   const layer = document.getElementById('nodesLayer');
+  if (!layer) return;
   let html = '';
+
   const lake = locations.find((l) => l.id === 'lake');
   if (lake) {
-    html += `<ellipse cx="${lake.x}" cy="${lake.y}" rx="70" ry="55" fill="#3b82f6" opacity="0.45"/>`;
-    html += `<text x="${lake.x}" y="${lake.y + 5}" text-anchor="middle" fill="white" font-size="13" font-weight="600">LAKE</text>`;
+    html += `<ellipse cx="${lake.x}" cy="${lake.y}" rx="72" ry="56" fill="#e0f2fe" stroke="#38bdf8" stroke-width="2.5" opacity="0.9"/>`;
+    html += `<text x="${lake.x}" y="${lake.y + 5}" text-anchor="middle" fill="#0284c7" font-size="13" font-weight="800" letter-spacing="1">LAKE</text>`;
   }
+
   locations.forEach((loc) => {
     if (loc.id === 'lake') return;
     const isFrom = fromId === loc.id;
     const isTo = toId === loc.id;
     const onPath = currentPath && currentPath.includes(loc.id);
-    let fill = '#4b5563';
-    let stroke = 'transparent';
-    let strokeW = 0;
+    const matchesSearch = searchQuery && loc.name.toLowerCase().includes(searchQuery);
+
+    let fill = '#ffffff';
+    let stroke = '#4f46e5';
+    let strokeW = 2.5;
     let r = 16;
+    let labelColor = '#1e293b';
+
     if (isFrom) {
-      fill = '#22c55e';
-      stroke = '#86efac';
-      strokeW = 3;
+      fill = '#10b981';
+      stroke = '#047857';
+      strokeW = 3.5;
       r = 18;
     } else if (isTo) {
       fill = '#ef4444';
-      stroke = '#fca5a5';
-      strokeW = 3;
+      stroke = '#b91c1c';
+      strokeW = 3.5;
       r = 18;
     } else if (onPath) {
       fill = '#6366f1';
-      stroke = '#c4b5fd';
-      strokeW = 2;
+      stroke = '#4338ca';
+      strokeW = 3;
+      r = 17;
+    } else if (matchesSearch) {
+      fill = '#fef08a';
+      stroke = '#ca8a04';
+      strokeW = 3;
       r = 17;
     }
-    html += `<g class="building-node" data-id="${loc.id}" style="cursor:pointer">
-      <circle cx="${loc.x}" cy="${loc.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeW}"/>
-      <text x="${loc.x}" y="${loc.y + r + 14}" text-anchor="middle" fill="#e5e5ef" font-size="11" font-weight="500">${window.getShortLabel(loc.id)}</text>
-      ${window.hasIndoorMap(loc.id) ? `<circle cx="${loc.x + 13}" cy="${loc.y - 13}" r="7" fill="#f59e0b" stroke="#1a1a24" stroke-width="2"/><text x="${loc.x + 13}" y="${loc.y - 9.5}" text-anchor="middle" fill="#1a1a24" font-size="10" font-weight="700" pointer-events="none">i</text>` : ''}
+
+    const dotInner = (!isFrom && !isTo && !onPath)
+      ? `<circle cx="${loc.x}" cy="${loc.y}" r="6" fill="#6366f1"/>`
+      : `<circle cx="${loc.x}" cy="${loc.y}" r="6" fill="#ffffff"/>`;
+
+    html += `<g class="building-node" data-id="${loc.id}">
+      <circle cx="${loc.x}" cy="${loc.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeW}" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.08))"/>
+      ${dotInner}
+      <text x="${loc.x}" y="${loc.y + r + 15}" text-anchor="middle" fill="${labelColor}" font-size="11.5" font-weight="700">${window.getShortLabel(loc.id)}</text>
+      ${window.hasIndoorMap(loc.id) ? `<circle cx="${loc.x + 13}" cy="${loc.y - 13}" r="8" fill="#f59e0b" stroke="#ffffff" stroke-width="2"/><text x="${loc.x + 13}" y="${loc.y - 9.5}" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="800" pointer-events="none">i</text>` : ''}
     </g>`;
   });
-  // "Enter building" pop-up above the clicked node (only for buildings with an indoor map)
+
   if (focusId && window.hasIndoorMap(focusId)) {
     const f = locations.find((l) => l.id === focusId);
     const plan = window.INDOOR_PLANS[focusId];
-    const label = 'Enter ' + plan.shortName + ' ▸';
-    const w = label.length * 7.5 + 22;
-    const px = Math.min(Math.max(f.x, w / 2 + 6), 800 - w / 2 - 6);
-    const py = f.y - 52;
-    html += `<g class="enter-pop" data-building="${focusId}" style="cursor:pointer">
-      <rect x="${px - w / 2}" y="${py - 15}" width="${w}" height="30" rx="15" fill="#f59e0b" stroke="#fde68a" stroke-width="2"/>
-      <text x="${px}" y="${py + 5}" text-anchor="middle" fill="#1a1a24" font-size="13" font-weight="700">${label}</text>
-      <path d="M${f.x - 6} ${py + 15} L${f.x} ${py + 24} L${f.x + 6} ${py + 15} Z" fill="#f59e0b"/>
-    </g>`;
+    if (f && plan) {
+      const label = 'Enter ' + plan.shortName + ' Plan ▸';
+      const w = label.length * 7.5 + 24;
+      const px = Math.min(Math.max(f.x, w / 2 + 10), 800 - w / 2 - 10);
+      const py = f.y - 54;
+      html += `<g class="enter-pop" data-building="${focusId}" style="cursor:pointer">
+        <rect x="${px - w / 2}" y="${py - 15}" width="${w}" height="32" rx="16" fill="#f59e0b" stroke="#ffffff" stroke-width="2" filter="drop-shadow(0 4px 8px rgba(245,158,11,0.35))"/>
+        <text x="${px}" y="${py + 6}" text-anchor="middle" fill="#ffffff" font-size="12.5" font-weight="800">${label}</text>
+        <path d="M${f.x - 7} ${py + 17} L${f.x} ${py + 26} L${f.x + 7} ${py + 17} Z" fill="#f59e0b"/>
+      </g>`;
+    }
   }
+
   layer.innerHTML = html;
+
   document.querySelectorAll('.enter-pop').forEach((el) => {
     el.addEventListener('click', () => enterBuilding(el.getAttribute('data-building')));
   });
+
   document.querySelectorAll('.building-node').forEach((el) => {
     el.addEventListener('click', () => selectLocation(el.getAttribute('data-id')));
     el.addEventListener('dblclick', () => {
@@ -137,6 +174,7 @@ function updateBuildingAction() {
 function selectLocation(id) {
   focusId = id;
   updateBuildingAction();
+
   if (!fromId || (fromId && toId)) {
     fromId = id;
     toId = null;
@@ -147,19 +185,29 @@ function selectLocation(id) {
   } else {
     toId = id;
   }
+
+  const fromBox = document.getElementById('fromBox');
+  const toBox = document.getElementById('toBox');
+
+  if (fromBox) fromBox.classList.toggle('active', !!fromId);
+  if (toBox) toBox.classList.toggle('active', !!toId);
+
   document.getElementById('fromName').textContent = fromId ? window.getLocationName(fromId) : 'Click a building';
   document.getElementById('toName').textContent = toId ? window.getLocationName(toId) : 'Click another building';
   document.getElementById('calcBtn').disabled = !(fromId && toId);
   document.getElementById('favBtn').disabled = !fromId;
   document.getElementById('favBtn').textContent = favourites.includes(fromId)
-    ? 'Saved in Favourites'
-    : 'Save From as Favourite';
+    ? '★ Saved in Favourites'
+    : '☆ Save From as Favourite';
+
   if (fromId) {
     document.getElementById('goRouteBtn').href = `/navigate.html?from=${fromId}${toId ? '&to=' + toId : ''}`;
   }
+
   document.getElementById('pathResult').style.display = 'none';
   drawEdges(null);
   drawNodes();
+  updateButtonActiveStates();
 }
 
 function calculatePath() {
@@ -168,31 +216,50 @@ function calculatePath() {
   const resultDiv = document.getElementById('pathResult');
   const list = document.getElementById('pathList');
   const badge = document.getElementById('pathBadge');
+
   if (!result) {
     badge.textContent = blocked.length
-      ? 'No path — a blocked road closed this route. Try Admin to unblock, or another destination.'
-      : 'No path found';
+      ? 'No route available — road closures block all paths. Check Admin panel.'
+      : 'No route found between these locations.';
+    badge.style.background = '#fef2f2';
+    badge.style.color = '#dc2626';
+    badge.style.borderColor = '#fecaca';
     list.innerHTML = '';
     resultDiv.style.display = 'block';
     return;
   }
+
   currentPath = result.path;
-  badge.textContent = `Dijkstra • Distance: ${result.distance} units` + (blocked.length ? ' (avoiding blocked roads)' : '');
-  badge.style.cssText =
-    'display:inline-block;background:rgba(99,102,241,0.15);color:#a5b4fc;padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:500;';
+  badge.textContent = `Dijkstra Optimal Route • Distance: ${result.distance} units` + (blocked.length ? ' (avoiding road blocks)' : '');
+  badge.style.background = 'var(--primary-light)';
+  badge.style.color = 'var(--primary)';
+  badge.style.borderColor = 'var(--primary-border)';
+
   list.innerHTML = result.path
     .map(
-      (id, i) => `<li style="padding:8px 0;border-bottom:1px solid #2a2a3a;display:flex;align-items:center;gap:10px;">
-      <span style="width:24px;height:24px;background:rgba(99,102,241,0.2);color:#a5b4fc;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:600;">${i + 1}</span>
-      ${window.getLocationName(id)}</li>`
+      (id, i) => `<li>
+      <span class="step-num">${i + 1}</span>
+      <span>${window.getLocationName(id)}</span>
+      ${i === 0 ? '<span class="loc-type" style="margin-left:auto;">Start</span>' : i === result.path.length - 1 ? '<span class="loc-type" style="margin-left:auto;background:#ecfdf5;color:#059669;">Destination</span>' : ''}
+      </li>`
     )
     .join('');
+
   resultDiv.style.display = 'block';
   drawEdges(result.path);
   drawNodes();
+  window.CampusApp.toast(`Route computed: ${result.distance} units across ${result.path.length} stops`, 'success');
+}
+
+function updateButtonActiveStates() {
+  document.querySelectorAll('.loc-btn').forEach((btn) => {
+    const id = btn.getAttribute('data-id');
+    btn.classList.toggle('active', id === fromId || id === toId);
+  });
 }
 
 document.getElementById('calcBtn').addEventListener('click', calculatePath);
+
 document.getElementById('clearBtn').addEventListener('click', () => {
   focusId = null;
   updateBuildingAction();
@@ -201,12 +268,18 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   currentPath = null;
   document.getElementById('fromName').textContent = 'Click a building';
   document.getElementById('toName').textContent = 'Click another building';
+  const fromBox = document.getElementById('fromBox');
+  const toBox = document.getElementById('toBox');
+  if (fromBox) fromBox.classList.remove('active');
+  if (toBox) toBox.classList.remove('active');
   document.getElementById('calcBtn').disabled = true;
   document.getElementById('favBtn').disabled = true;
   document.getElementById('pathResult').style.display = 'none';
   document.getElementById('goRouteBtn').href = '/navigate.html';
   drawEdges(null);
   drawNodes();
+  updateButtonActiveStates();
+  window.CampusApp.toast('Selection cleared');
 });
 
 document.getElementById('favBtn').addEventListener('click', async () => {
@@ -215,31 +288,52 @@ document.getElementById('favBtn').addEventListener('click', async () => {
     if (favourites.includes(fromId)) {
       const data = await window.CampusApp.api('/api/favourites/' + fromId, { method: 'DELETE' });
       favourites = data.favourites || [];
+      window.CampusApp.toast(`Removed ${window.getLocationName(fromId)} from favourites`);
     } else {
       const data = await window.CampusApp.api('/api/favourites', {
         method: 'POST',
         body: JSON.stringify({ locationId: fromId })
       });
       favourites = data.favourites || [];
+      window.CampusApp.toast(`Saved ${window.getLocationName(fromId)} to favourites!`, 'success');
     }
     document.getElementById('favBtn').textContent = favourites.includes(fromId)
-      ? 'Saved in Favourites'
-      : 'Save From as Favourite';
+      ? '★ Saved in Favourites'
+      : '☆ Save From as Favourite';
   } catch (err) {
-    alert(err.message);
+    window.CampusApp.toast(err.message, 'error');
   }
 });
 
-const locButtons = document.getElementById('locButtons');
-locations
-  .filter((l) => l.id !== 'lake')
-  .forEach((loc) => {
+function renderLocButtons() {
+  const locButtons = document.getElementById('locButtons');
+  if (!locButtons) return;
+  locButtons.innerHTML = '';
+  const filtered = locations
+    .filter((l) => l.id !== 'lake')
+    .filter((l) => !searchQuery || l.name.toLowerCase().includes(searchQuery));
+
+  filtered.forEach((loc) => {
     const btn = document.createElement('button');
-    btn.className = 'loc-btn';
-    btn.textContent = loc.name;
+    btn.className = 'loc-btn' + (loc.id === fromId || loc.id === toId ? ' active' : '');
+    btn.setAttribute('data-id', loc.id);
+    btn.innerHTML = `<span>${loc.name}</span>`;
     btn.addEventListener('click', () => selectLocation(loc.id));
     locButtons.appendChild(btn);
   });
+
+  const countEl = document.getElementById('locMatchCount');
+  if (countEl) countEl.textContent = `${filtered.length} places`;
+}
+
+const searchInput = document.getElementById('mapSearch');
+if (searchInput) {
+  searchInput.addEventListener('input', (e) => {
+    searchQuery = e.target.value.trim().toLowerCase();
+    renderLocButtons();
+    drawNodes();
+  });
+}
 
 (async () => {
   try {
@@ -250,6 +344,7 @@ locations
     const fav = await window.CampusApp.api('/api/favourites');
     favourites = fav.favourites || [];
   } catch (_) {}
+  renderLocButtons();
   drawEdges(null);
   drawNodes();
 })();

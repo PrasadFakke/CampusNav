@@ -5,30 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CampusNav • Favourites</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/dashboard.css" />
 </head>
 <body data-page="favourites">
   <main class="main">
     <header class="topbar">
       <div>
-        <h1>Favourites</h1>
-        <p class="subtitle">Saved to your MongoDB user account. Same list after login on any device.</p>
+        <h1>My Saved Favourites</h1>
+        <p class="subtitle">Quick-access places synced with your personal account across all devices.</p>
       </div>
     </header>
     <div class="content-grid">
       <div class="card">
-        <div class="card-header"><h2>Add a location</h2></div>
-        <div class="field" style="margin-bottom:12px;">
-          <label>Campus place</label>
+        <div class="card-header"><h2>Bookmark a Location</h2></div>
+        <div class="field" style="margin-bottom:14px;">
+          <label>Select campus place</label>
           <select id="addSelect"></select>
         </div>
-        <button class="btn primary" id="addBtn" type="button">Save to Favourites</button>
-        <p id="msg" class="subtitle" style="margin-top:10px;"></p>
+        <button class="btn primary" id="addBtn" type="button">★ Add to Favourites</button>
+        <p id="msg" class="subtitle" style="margin-top:12px;font-weight:600;"></p>
       </div>
       <div class="card">
-        <div class="card-header"><h2>My saved places</h2></div>
-        <div id="favList"></div>
+        <div class="card-header">
+          <h2>Saved Campus Places</h2>
+          <span style="font-size:0.8rem;color:var(--muted);font-weight:700;" id="favCounter">0 places</span>
+        </div>
+        <div id="favList" style="display:flex;flex-direction:column;gap:8px;"></div>
       </div>
     </div>
   </main>

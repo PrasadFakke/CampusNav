@@ -1,11 +1,16 @@
+// Auto-redirect to dashboard if already signed in
+if (localStorage.getItem('token') && localStorage.getItem('user')) {
+  window.location.href = '/dashboard.html';
+}
+
 // ===== Tab switching =====
 const tabs = document.querySelectorAll('.tab');
 const forms = document.querySelectorAll('.form');
 
-tabs.forEach(tab => {
+tabs.forEach((tab) => {
   tab.addEventListener('click', () => {
-    tabs.forEach(t => t.classList.remove('active'));
-    forms.forEach(f => f.classList.remove('active'));
+    tabs.forEach((t) => t.classList.remove('active'));
+    forms.forEach((f) => f.classList.remove('active'));
     tab.classList.add('active');
     document.getElementById(tab.dataset.tab === 'login' ? 'loginForm' : 'registerForm')
       .classList.add('active');
@@ -14,7 +19,7 @@ tabs.forEach(tab => {
 });
 
 // ===== Password visibility toggle =====
-document.querySelectorAll('.toggle-pass').forEach(btn => {
+document.querySelectorAll('.toggle-pass').forEach((btn) => {
   btn.addEventListener('click', () => {
     const input = document.getElementById(btn.dataset.target);
     const isPass = input.type === 'password';
@@ -48,8 +53,8 @@ function setLoading(btn, loading) {
   const text = btn.querySelector('.btn-text');
   const spinner = btn.querySelector('.spinner');
   btn.disabled = loading;
-  text.style.opacity = loading ? '0.7' : '1';
-  spinner.classList.toggle('hidden', !loading);
+  if (text) text.style.opacity = loading ? '0.7' : '1';
+  if (spinner) spinner.classList.toggle('hidden', !loading);
 }
 
 // ===== Login =====
@@ -93,13 +98,12 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 
     showMessage('Login successful! Redirecting…', 'success');
 
-    // Redirect to dashboard / map page (change this path later)
     setTimeout(() => {
-      window.location.href = '/dashboard.html';   // create this later for campus map
-    }, 900);
+      window.location.href = '/dashboard.html';
+    }, 700);
 
   } catch (err) {
-    showMessage('Cannot connect to server. Is the backend running?');
+    showMessage('Cannot connect to server. Is MongoDB & Node server running?');
     setLoading(btn, false);
   }
 });
@@ -140,14 +144,15 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
       return;
     }
 
-    showMessage('Account created! You can now sign in.', 'success');
+    showMessage('Account created successfully! You can now sign in.', 'success');
     setLoading(btn, false);
 
     // Switch to login tab
     setTimeout(() => {
       document.querySelector('.tab[data-tab="login"]').click();
       document.getElementById('loginUsername').value = username;
-    }, 1200);
+      document.getElementById('loginPassword').focus();
+    }, 1000);
 
   } catch (err) {
     showMessage('Cannot connect to server. Is the backend running?');

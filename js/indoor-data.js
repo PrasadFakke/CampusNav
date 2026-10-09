@@ -38,12 +38,12 @@
       // Drawn shapes: outer walls + rooms (x, y, w, h)
       outline: { x: 30, y: 35, w: 930, h: 360 },
       rooms: [
-        { id: 'r008', x: 30, y: 35, w: 167, h: 141, fill: '#2b2f4a' },
-        { id: 'stairs', x: 260, y: 36, w: 40, h: 146, fill: '#2a2a3a', stairs: true },
-        { id: 'office', x: 337, y: 99, w: 140, h: 85, fill: '#3a2f4f' },
-        { id: 'xerox', x: 307, y: 185, w: 33, h: 47, fill: '#2f3a3a' },
-        { id: 'r003', x: 755, y: 37, w: 125, h: 70, fill: '#2b2f4a' },
-        { id: 'r001', x: 880, y: 60, w: 75, h: 188, fill: '#2b2f4a' }
+        { id: 'r008', x: 30, y: 35, w: 167, h: 141, fill: '#eff6ff' },
+        { id: 'stairs', x: 260, y: 36, w: 40, h: 146, fill: '#fef3c7', stairs: true },
+        { id: 'office', x: 337, y: 99, w: 140, h: 85, fill: '#f5f3ff' },
+        { id: 'xerox', x: 307, y: 185, w: 33, h: 47, fill: '#ecfdf5' },
+        { id: 'r003', x: 755, y: 37, w: 125, h: 70, fill: '#eff6ff' },
+        { id: 'r001', x: 880, y: 60, w: 75, h: 188, fill: '#eff6ff' }
       ],
       // Rooms/places a person can start or end at (hall-* are hidden corridor points)
       nodes: [
