@@ -12,21 +12,23 @@ const User = require('./models/User');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const frontendPath = path.join(__dirname, '..', 'frontend');
+const publicPath = path.join(frontendPath, 'public');
 
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(express.static(path.join(__dirname, 'public')));
-app.use('/css', express.static(path.join(__dirname, 'css')));
-app.use('/js', express.static(path.join(__dirname, 'js')));
+app.use(express.static(publicPath));
+app.use('/css', express.static(path.join(frontendPath, 'css')));
+app.use('/js', express.static(path.join(frontendPath, 'js')));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/favourites', favouriteRoutes);
 app.use('/api/campus', campusRoutes);
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(publicPath, 'index.html'));
 });
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/campusnav';

@@ -2,10 +2,10 @@
   "name": "campus-nav-login",
   "version": "1.0.0",
   "description": "Login + MongoDB auth for Campus Navigation mini project",
-  "main": "server.js",
+  "main": "backend/server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node backend/server.js",
+    "dev": "node backend/server.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
