@@ -17,6 +17,20 @@
     .step-row .d { margin-left: auto; color: var(--muted); font-size: 0.8rem; font-weight: 600; white-space: nowrap; }
     .indoor-node { cursor: pointer; }
     .room-hit { cursor: pointer; }
+    .floor-bar { position: absolute; top: 14px; left: 16px; z-index: 3; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .floor-tabs { display: inline-flex; background: var(--primary-light); border: 1px solid var(--primary-border); border-radius: 12px; padding: 3px; gap: 3px; }
+    .floor-tab { position: relative; border: 0; background: transparent; color: var(--primary); font: inherit; font-size: 0.85rem; font-weight: 700; padding: 8px 16px; border-radius: 9px; cursor: pointer; transition: all 0.15s; }
+    .floor-tab:hover { background: rgba(255,255,255,0.6); }
+    .floor-tab.active { background: var(--primary); color: #fff; box-shadow: 0 2px 6px rgba(79,70,229,0.3); }
+    .floor-tab .dot { position: absolute; top: 5px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: #f59e0b; }
+    .floor-step { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--primary-border); background: #fff; color: var(--primary); font-size: 1rem; font-weight: 800; cursor: pointer; }
+    .floor-step:hover:not(:disabled) { background: var(--primary-light); }
+    .floor-step:disabled { opacity: 0.35; cursor: not-allowed; }
+    .floor-chip { display: inline-block; background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary-border); padding: 1px 7px; border-radius: 6px; font-size: 0.68rem; font-weight: 700; margin-left: 6px; vertical-align: middle; }
+    .floor-group { width: 100%; font-size: 0.72rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin: 8px 0 2px; }
+    .step-row[data-floor] { cursor: pointer; }
+    .step-row.change { background: #fffbeb; border-radius: 8px; padding-left: 8px; padding-right: 8px; }
+    .step-row.change .n { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
   </style>
 </head>
 <body data-page="map">
@@ -32,6 +46,11 @@
     </header>
     <div class="map-layout">
       <div class="map-container">
+        <div class="floor-bar">
+          <button class="floor-step" id="floorDown" title="Go down a floor">▼</button>
+          <div class="floor-tabs" id="floorTabs"></div>
+          <button class="floor-step" id="floorUp" title="Go up a floor">▲</button>
+        </div>
         <div class="map-canvas">
           <svg class="indoor-svg" id="indoorSvg" viewBox="0 0 990 420"></svg>
         </div>
