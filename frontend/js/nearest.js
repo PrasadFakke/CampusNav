@@ -1,5 +1,21 @@
 window.CampusApp.requireAuth();
 
+if (!window.animateRouteWalker) {
+  const iconScript = document.createElement('script');
+  iconScript.src = '/js/node-icons.js';
+  document.head.appendChild(iconScript);
+}
+
+window.CAMPUS_NODE_ICONS = window.CAMPUS_NODE_ICONS || {
+  'entrance': '🚪', 'spit': '🏫', 'spce': '🏛️', 'workshop': '🔧', 'library': '📚',
+  'lib-ext': '📖', 'bhavans-college': '🎓', 'cultural': '🎭', 'spjimr': '🏢',
+  'spjimr-hostel': '🛏️', 'hostel': '🏠', 'wadia': '🏫', 'sports-complex': '🏟️',
+  'playground': '⚽', 'lake': '💧', 'canteen': '🍽️', 'medical': '🏥', 'security': '🛡️'
+};
+window.getNodeIcon = window.getNodeIcon || function (id) {
+  return window.CAMPUS_NODE_ICONS[id] || '📍';
+};
+
 let blocked = [];
 let selectedType = 'Canteen';
 const fromSelect = document.getElementById('fromSelect');
@@ -82,9 +98,17 @@ function runNearest() {
       : '';
     html += `<li class="loc-item" style="background:#ffffff;box-shadow:var(--shadow-sm);"><div class="loc-dot"></div><div class="loc-name">${i + 1}. ${window.getLocationName(id)}</div>${tag}</li>`;
   });
-  html += '</ul>';
-  html += `<p style="margin-top:16px;"><a class="btn primary" style="font-size:0.88rem;padding:9px 16px;" href="/navigate.html?from=${start}&to=${found.id}">Open Full Route Map →</a></p>`;
+  html += `</ul>
+    <div id="mapPreview" style="margin-top:18px;">
+      <svg class="mini-svg" id="nearestMiniMap" viewBox="0 0 800 700" style="width:100%;max-height:360px;background:#ffffff;border:1.5px solid var(--border);border-radius:14px;box-shadow:var(--shadow-sm);"></svg>
+    </div>
+    <p style="margin-top:16px;"><a class="btn primary" style="font-size:0.88rem;padding:9px 16px;" href="/navigate.html?from=${start}&to=${found.id}">Open Full Route Map →</a></p>`;
   box.innerHTML = html;
+
+  const miniMap = document.getElementById('nearestMiniMap');
+  if (window.renderCampusMiniMap && miniMap) {
+    window.renderCampusMiniMap(miniMap, found.path, blocked);
+  }
   window.CampusApp.toast(`Found nearest ${selectedType}: ${window.getLocationName(found.id)} (${found.hops} stops)`, 'success');
 }
 

@@ -1,5 +1,21 @@
 window.CampusApp.requireAuth();
 
+if (!window.animateRouteWalker) {
+  const iconScript = document.createElement('script');
+  iconScript.src = '/js/node-icons.js';
+  document.head.appendChild(iconScript);
+}
+
+window.CAMPUS_NODE_ICONS = window.CAMPUS_NODE_ICONS || {
+  'entrance': '🚪', 'spit': '🏫', 'spce': '🏛️', 'workshop': '🔧', 'library': '📚',
+  'lib-ext': '📖', 'bhavans-college': '🎓', 'cultural': '🎭', 'spjimr': '🏢',
+  'spjimr-hostel': '🛏️', 'hostel': '🏠', 'wadia': '🏫', 'sports-complex': '🏟️',
+  'playground': '⚽', 'lake': '💧', 'canteen': '🍽️', 'medical': '🏥', 'security': '🛡️'
+};
+window.getNodeIcon = window.getNodeIcon || function (id) {
+  return window.CAMPUS_NODE_ICONS[id] || '📍';
+};
+
 const locations = window.CAMPUS_LOCATIONS;
 let blocked = [];
 let fromId = null;
@@ -27,6 +43,11 @@ function drawEdges(pathIds) {
   if (!layer) return;
   const drawn = new Set();
   let html = '';
+  const lake = locations.find((loc) => loc.id === 'lake');
+  if (lake) {
+    html += `<ellipse cx="${lake.x}" cy="${lake.y}" rx="86" ry="68" fill="none"
+      stroke="#cbd5e1" stroke-width="2.5" opacity="0.7" pointer-events="none"/>`;
+  }
 
   Object.keys(window.CAMPUS_GRAPH).forEach((u) => {
     const locU = locations.find((l) => l.id === u);
@@ -40,8 +61,9 @@ function drawEdges(pathIds) {
       const weight = window.CAMPUS_GRAPH[u][v];
       const isBlocked = blocked.includes(key);
       const isPath = !isBlocked && isPathEdge(u, v, pathIds);
-      const mx = (locU.x + locV.x) / 2;
-      const my = (locU.y + locV.y) / 2;
+      const edgePoints = window.getEdgeDisplayPoints(locU, locV, 86, 68);
+      const mx = (edgePoints.x1 + edgePoints.x2) / 2;
+      const my = (edgePoints.y1 + edgePoints.y2) / 2;
 
       const strokeColor = isBlocked ? '#ef4444' : isPath ? '#4f46e5' : '#cbd5e1';
       const strokeWidth = isPath ? 5.5 : 2.5;
@@ -49,7 +71,7 @@ function drawEdges(pathIds) {
       const dashArray = isBlocked ? '7 5' : '0';
       const opacity = isBlocked ? 0.95 : isPath ? 1 : 0.7;
 
-      html += `<line x1="${locU.x}" y1="${locU.y}" x2="${locV.x}" y2="${locV.y}"
+      html += `<line x1="${edgePoints.x1}" y1="${edgePoints.y1}" x2="${edgePoints.x2}" y2="${edgePoints.y2}"
         stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="round"
         stroke-dasharray="${dashArray}" opacity="${opacity}" ${animClass}/>`;
 
@@ -62,6 +84,20 @@ function drawEdges(pathIds) {
     });
   });
 
+  if (pathIds && pathIds.length > 2) {
+    for (let i = 1; i < pathIds.length - 1; i++) {
+      if (pathIds[i] !== 'lake') continue;
+      const from = locations.find((loc) => loc.id === pathIds[i - 1]);
+      const to = locations.find((loc) => loc.id === pathIds[i + 1]);
+      if (!from || !to) continue;
+      const lakeArc = window.getLakeArc(from, to, 86, 68);
+      if (lakeArc) {
+        html += `<path d="${lakeArc.fullD}" fill="none" stroke="#4f46e5" stroke-width="5.5"
+          stroke-linecap="round" stroke-linejoin="round" class="path-edge-animated" pointer-events="none"/>`;
+      }
+    }
+  }
+
   layer.innerHTML = html;
 }
 
@@ -72,8 +108,17 @@ function drawNodes() {
 
   const lake = locations.find((l) => l.id === 'lake');
   if (lake) {
-    html += `<ellipse cx="${lake.x}" cy="${lake.y}" rx="72" ry="56" fill="#e0f2fe" stroke="#38bdf8" stroke-width="2.5" opacity="0.9"/>`;
-    html += `<text x="${lake.x}" y="${lake.y + 5}" text-anchor="middle" fill="#0284c7" font-size="13" font-weight="800" letter-spacing="1">LAKE</text>`;
+    html += `
+      <g class="lake-promenade-group" pointer-events="none">
+        <ellipse cx="${lake.x}" cy="${lake.y}" rx="72" ry="56" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="2" />
+        <ellipse cx="${lake.x}" cy="${lake.y}" rx="68" ry="52" fill="#e0f2fe" stroke="#38bdf8" stroke-width="2.5" opacity="0.95" />
+        <path d="M ${lake.x - 24} ${lake.y - 18} Q ${lake.x - 16} ${lake.y - 22} ${lake.x - 8} ${lake.y - 18} T ${lake.x + 8} ${lake.y - 18}" fill="none" stroke="#7dd3fc" stroke-width="2" stroke-linecap="round" opacity="0.75"/>
+        <path d="M ${lake.x + 6} ${lake.y + 12} Q ${lake.x + 14} ${lake.y + 8} ${lake.x + 22} ${lake.y + 12} T ${lake.x + 38} ${lake.y + 12}" fill="none" stroke="#7dd3fc" stroke-width="2" stroke-linecap="round" opacity="0.75"/>
+        <text x="${lake.x}" y="${lake.y - 4}" text-anchor="middle" dominant-baseline="central" font-size="22" style="user-select:none;">💧</text>
+        <text x="${lake.x}" y="${lake.y + 16}" text-anchor="middle" fill="#0284c7" font-size="12" font-weight="800" letter-spacing="1">LAKE</text>
+        <text x="${lake.x}" y="${lake.y + 28}" text-anchor="middle" fill="#64748b" font-size="8.5" font-weight="600" letter-spacing="0.5">PERIMETER WALKWAY</text>
+      </g>
+    `;
   }
 
   locations.forEach((loc) => {
@@ -83,42 +128,65 @@ function drawNodes() {
     const onPath = currentPath && currentPath.includes(loc.id);
     const matchesSearch = searchQuery && loc.name.toLowerCase().includes(searchQuery);
 
-    let fill = '#ffffff';
-    let stroke = '#4f46e5';
+    const nodeColors = {
+      Entrance: ['#e0f2fe', '#0284c7'],
+      Institute: ['#ede9fe', '#7c3aed'],
+      College: ['#dbeafe', '#2563eb'],
+      Workshop: ['#fef3c7', '#d97706'],
+      Facility: ['#ccfbf1', '#0f766e'],
+      Cultural: ['#fce7f3', '#db2777'],
+      Hostel: ['#ffedd5', '#ea580c'],
+      School: ['#e0e7ff', '#4f46e5'],
+      Sports: ['#d1fae5', '#059669'],
+      Canteen: ['#fef9c3', '#ca8a04'],
+      Medical: ['#ffe4e6', '#e11d48'],
+      Emergency: ['#fee2e2', '#dc2626']
+    };
+    const [defaultFill, defaultStroke] = nodeColors[loc.type] || ['#eef2ff', '#4f46e5'];
+    let fill = defaultFill;
+    let stroke = defaultStroke;
     let strokeW = 2.5;
-    let r = 16;
+    let r = 22;
     let labelColor = '#1e293b';
 
     if (isFrom) {
       fill = '#10b981';
       stroke = '#047857';
       strokeW = 3.5;
-      r = 18;
+      r = 25;
     } else if (isTo) {
       fill = '#ef4444';
       stroke = '#b91c1c';
       strokeW = 3.5;
-      r = 18;
+      r = 25;
     } else if (onPath) {
       fill = '#6366f1';
       stroke = '#4338ca';
       strokeW = 3;
-      r = 17;
+      r = 24;
     } else if (matchesSearch) {
       fill = '#fef08a';
       stroke = '#ca8a04';
       strokeW = 3;
-      r = 17;
+      r = 24;
     }
 
-    const dotInner = (!isFrom && !isTo && !onPath)
-      ? `<circle cx="${loc.x}" cy="${loc.y}" r="6" fill="#6366f1"/>`
-      : `<circle cx="${loc.x}" cy="${loc.y}" r="6" fill="#ffffff"/>`;
+    const icon = (window.CAMPUS_NODE_ICONS && window.CAMPUS_NODE_ICONS[loc.id]) || (window.getNodeIcon && window.getNodeIcon(loc.id)) || '📍';
+    const nodeClasses = [
+      'building-node',
+      isFrom ? 'is-start' : '',
+      isTo ? 'is-destination' : '',
+      onPath && !isFrom && !isTo ? 'is-on-path' : '',
+      matchesSearch ? 'is-search-match' : ''
+    ].filter(Boolean).join(' ');
 
-    html += `<g class="building-node" data-id="${loc.id}">
-      <circle cx="${loc.x}" cy="${loc.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeW}" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.08))"/>
-      ${dotInner}
-      <text x="${loc.x}" y="${loc.y + r + 15}" text-anchor="middle" fill="${labelColor}" font-size="11.5" font-weight="700">${window.getShortLabel(loc.id)}</text>
+    html += `<g class="${nodeClasses}" data-id="${loc.id}">
+      <g class="node-marker">
+        <circle class="node-pulse" cx="${loc.x}" cy="${loc.y}" r="${r + 5}" stroke="${stroke}" />
+        <circle class="node-face" cx="${loc.x}" cy="${loc.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeW}" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.12))"/>
+        <text class="node-icon" x="${loc.x}" y="${loc.y}" text-anchor="middle" dominant-baseline="central" font-size="27">${icon}</text>
+      </g>
+      <text class="node-label" x="${loc.x}" y="${loc.y + r + 17}" text-anchor="middle" fill="${labelColor}" font-size="11.5" font-weight="700">${window.getShortLabel(loc.id)}</text>
       ${window.hasIndoorMap(loc.id) ? `<circle cx="${loc.x + 13}" cy="${loc.y - 13}" r="8" fill="#f59e0b" stroke="#ffffff" stroke-width="2"/><text x="${loc.x + 13}" y="${loc.y - 9.5}" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="800" pointer-events="none">i</text>` : ''}
     </g>`;
   });
@@ -207,6 +275,9 @@ function selectLocation(id) {
   document.getElementById('pathResult').style.display = 'none';
   drawEdges(null);
   drawNodes();
+  if (window.animateRouteWalker) {
+    window.animateRouteWalker(document.getElementById('campusSvg'), null);
+  }
   updateButtonActiveStates();
 }
 
@@ -226,6 +297,9 @@ function calculatePath() {
     badge.style.borderColor = '#fecaca';
     list.innerHTML = '';
     resultDiv.style.display = 'block';
+    if (window.animateRouteWalker) {
+      window.animateRouteWalker(document.getElementById('campusSvg'), null);
+    }
     return;
   }
 
@@ -248,6 +322,9 @@ function calculatePath() {
   resultDiv.style.display = 'block';
   drawEdges(result.path);
   drawNodes();
+  if (window.animateRouteWalker) {
+    window.animateRouteWalker(document.getElementById('campusSvg'), result.path, locations, 86, 68);
+  }
   window.CampusApp.toast(`Route computed: ${result.distance} units across ${result.path.length} stops`, 'success');
 }
 
@@ -278,6 +355,9 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   document.getElementById('goRouteBtn').href = '/navigate.html';
   drawEdges(null);
   drawNodes();
+  if (window.animateRouteWalker) {
+    window.animateRouteWalker(document.getElementById('campusSvg'), null);
+  }
   updateButtonActiveStates();
   window.CampusApp.toast('Selection cleared');
 });

@@ -44,19 +44,80 @@
   transform: scale(1.20);
 }
 
-/* SVG Interactive Nodes - completely stationary (strictly NO movement or scale on hover/click) */
+/* SVG interactive nodes */
 .building-node {
   cursor: pointer;
-  transform: none !important;
 }
 
-.building-node:hover {
-  transform: none !important;
+.node-marker {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 180ms ease;
 }
 
-.building-node:hover circle:first-child {
+.building-node:hover .node-marker {
+  transform: scale(1.12);
+}
+
+.node-face {
+  transition: stroke-width 180ms ease, filter 180ms ease;
+}
+
+.building-node:hover .node-face {
   stroke-width: 3.5px;
-  filter: drop-shadow(0 0 6px rgba(79, 70, 229, 0.5));
+  filter: drop-shadow(0 3px 8px rgba(79, 70, 229, 0.32));
+}
+
+.node-icon {
+  user-select: none;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.12));
+}
+
+.node-pulse {
+  fill: none;
+  stroke-width: 2;
+  opacity: 0;
+  pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.building-node:hover .node-pulse {
+  opacity: 0.7;
+  animation: nodePulse 1.4s ease-out infinite;
+}
+
+.building-node.is-start .node-pulse,
+.building-node.is-destination .node-pulse,
+.building-node.is-on-path .node-pulse {
+  opacity: 0.55;
+  animation: nodePulse 2s ease-out infinite;
+}
+
+.building-node.is-destination .node-pulse {
+  animation-delay: 0.6s;
+}
+
+.node-label {
+  user-select: none;
+  pointer-events: none;
+  font-family: var(--font);
+  paint-order: stroke;
+  stroke: rgba(248, 250, 252, 0.92);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+@keyframes nodePulse {
+  0% {
+    opacity: 0.62;
+    transform: scale(0.72);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.45);
+  }
 }
 
 .indoor-node {
@@ -82,6 +143,24 @@
   user-select: none;
   pointer-events: none;
   font-family: var(--font);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .node-marker,
+  .node-face {
+    transition: none;
+  }
+
+  .building-node:hover .node-marker {
+    transform: none;
+  }
+
+  .building-node:hover .node-pulse,
+  .building-node.is-start .node-pulse,
+  .building-node.is-destination .node-pulse,
+  .building-node.is-on-path .node-pulse {
+    animation: none;
+  }
 }
 
 /* Flowing dash animation on calculated active path */
@@ -241,4 +320,15 @@
   .info-panel {
     order: 2;
   }
+}
+
+/* Route walker marker and mini map nodes */
+.route-walker-group {
+  pointer-events: none;
+}
+
+.route-walker-marker text,
+.mini-node text {
+  user-select: none;
+  pointer-events: none;
 }
