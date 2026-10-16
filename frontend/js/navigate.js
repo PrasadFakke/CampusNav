@@ -118,7 +118,7 @@ function findRoute() {
     return;
   }
 
-  let html = `<div class="algo-badge">Dijkstra Shortest Path • Total Distance: ${alt.distance} units${blocked.length ? ' • road closures bypassed' : ''}</div>`;
+  let html = `<div class="algo-badge">Optimal Walking Route • Total Distance: ${alt.distance} units${blocked.length ? ' • road closures bypassed' : ''}</div>`;
   if (open && blocked.length && open.distance !== alt.distance) {
     html += `<p class="subtitle" style="margin-bottom:12px;color:#d97706;font-weight:600;">Original direct path was ${open.distance} units. Alternative detoured route: ${alt.distance} units.</p>`;
   }
@@ -156,3 +156,50 @@ document.getElementById('findBtn').onclick = findRoute;
   } catch (_) {}
   if (params.get('from') && params.get('to')) findRoute();
 })();
+
+// ========== Use My Location (navigate page) ==========
+(function wireLocateNavigate() {
+  const btn = document.getElementById('locateBtn');
+  const statusEl = document.getElementById('locateStatus');
+  if (!btn || !statusEl) return;
+
+  function setStatus(msg, cls) {
+    statusEl.textContent = msg;
+    statusEl.className = 'locate-status' + (cls ? ' ' + cls : '');
+  }
+
+  function startDetecting() {
+    btn.disabled = true;
+    btn.classList.add('detecting');
+    setStatus('Detecting your position…');
+  }
+
+  function stopDetecting() {
+    btn.disabled = false;
+    btn.classList.remove('detecting');
+  }
+
+  btn.addEventListener('click', function () {
+    startDetecting();
+
+    window.useMyLocation({
+      onSuccess: function (nearest) {
+        fromSelect.value = nearest.id;
+        stopDetecting();
+        setStatus(
+          'You are near ' + nearest.name + ' (' + nearest.metres + ' m) on this device. Location sets the start only.',
+          'success'
+        );
+      },
+      onOutsideCampus: function (msg) {
+        stopDetecting();
+        setStatus(msg, 'warn');
+      },
+      onError: function (msg) {
+        stopDetecting();
+        setStatus(msg, 'error');
+      }
+    });
+  });
+})();
+

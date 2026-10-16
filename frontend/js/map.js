@@ -230,7 +230,7 @@ function calculatePath() {
   }
 
   currentPath = result.path;
-  badge.textContent = `Dijkstra Optimal Route • Distance: ${result.distance} units` + (blocked.length ? ' (avoiding road blocks)' : '');
+  badge.textContent = `Optimal Campus Route • Distance: ${result.distance} units` + (blocked.length ? ' (avoiding road blocks)' : '');
   badge.style.background = 'var(--primary-light)';
   badge.style.color = 'var(--primary)';
   badge.style.borderColor = 'var(--primary-border)';
@@ -347,4 +347,75 @@ if (searchInput) {
   renderLocButtons();
   drawEdges(null);
   drawNodes();
+})();
+
+// ========== Use My Location (map page) ==========
+(function wireLocateMap() {
+  const btn = document.getElementById('locateBtn');
+  const statusEl = document.getElementById('locateStatus');
+  if (!btn || !statusEl) return;
+
+  function setStatus(msg, cls) {
+    statusEl.textContent = msg;
+    statusEl.className = 'locate-status' + (cls ? ' ' + cls : '');
+  }
+
+  function startDetecting() {
+    btn.disabled = true;
+    btn.classList.add('detecting');
+    setStatus('Detecting your position…');
+  }
+
+  function stopDetecting() {
+    btn.disabled = false;
+    btn.classList.remove('detecting');
+  }
+
+  btn.addEventListener('click', function () {
+    startDetecting();
+
+    window.useMyLocation({
+      onSuccess: function (nearest) {
+        // Mirror what selectLocation() does for a fresh From selection
+        fromId = nearest.id;
+        toId = null;
+        currentPath = null;
+        focusId = nearest.id;
+        updateBuildingAction();
+
+        const fromBox = document.getElementById('fromBox');
+        const toBox   = document.getElementById('toBox');
+        if (fromBox) fromBox.classList.add('active');
+        if (toBox)   toBox.classList.remove('active');
+
+        document.getElementById('fromName').textContent = window.getLocationName(nearest.id);
+        document.getElementById('toName').textContent   = 'Click another building';
+        document.getElementById('calcBtn').disabled  = true;
+        document.getElementById('favBtn').disabled   = false;
+        document.getElementById('favBtn').textContent = favourites.includes(nearest.id)
+          ? '★ Saved in Favourites'
+          : '☆ Save From as Favourite';
+        document.getElementById('goRouteBtn').href = '/navigate.html?from=' + nearest.id;
+        document.getElementById('pathResult').style.display = 'none';
+
+        drawEdges(null);
+        drawNodes();
+        updateButtonActiveStates();
+
+        stopDetecting();
+        setStatus(
+          'You are near ' + nearest.name + ' (' + nearest.metres + ' m) on this device. Location sets the start only.',
+          'success'
+        );
+      },
+      onOutsideCampus: function (msg) {
+        stopDetecting();
+        setStatus(msg, 'warn');
+      },
+      onError: function (msg) {
+        stopDetecting();
+        setStatus(msg, 'error');
+      }
+    });
+  });
 })();

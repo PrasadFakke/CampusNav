@@ -48,3 +48,49 @@ document.getElementById('secBtn').onclick = () => run('security');
     blocked = campus.blockedEdges || [];
   } catch (_) {}
 })();
+
+// ========== Use My Location (emergency page) ==========
+(function wireLocateEmergency() {
+  const btn = document.getElementById('locateBtn');
+  const statusEl = document.getElementById('locateStatus');
+  if (!btn || !statusEl) return;
+
+  function setStatus(msg, cls) {
+    statusEl.textContent = msg;
+    statusEl.className = 'locate-status' + (cls ? ' ' + cls : '');
+  }
+
+  function startDetecting() {
+    btn.disabled = true;
+    btn.classList.add('detecting');
+    setStatus('Detecting your position…');
+  }
+
+  function stopDetecting() {
+    btn.disabled = false;
+    btn.classList.remove('detecting');
+  }
+
+  btn.addEventListener('click', function () {
+    startDetecting();
+
+    window.useMyLocation({
+      onSuccess: function (nearest) {
+        fromSelect.value = nearest.id;
+        stopDetecting();
+        setStatus(
+          'You are near ' + nearest.name + ' (' + nearest.metres + ' m) on this device. Location sets the start only.',
+          'success'
+        );
+      },
+      onOutsideCampus: function (msg) {
+        stopDetecting();
+        setStatus(msg, 'warn');
+      },
+      onError: function (msg) {
+        stopDetecting();
+        setStatus(msg, 'error');
+      }
+    });
+  });
+})();
