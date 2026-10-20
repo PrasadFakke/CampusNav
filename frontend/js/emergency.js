@@ -100,13 +100,12 @@ document.getElementById('secBtn').onclick = () => run('security');
     startDetecting();
 
     window.useMyLocation({
-      onSuccess: function (nearest) {
+      onSuccess: function (neighbours) {
+        const nearest = Array.isArray(neighbours) ? neighbours[0] : neighbours;
         fromSelect.value = nearest.id;
         stopDetecting();
-        setStatus(
-          'You are near ' + nearest.name + ' (' + nearest.metres + ' m) on this device. Location sets the start only.',
-          'success'
-        );
+        const msg = window.formatKnnStatus ? window.formatKnnStatus(neighbours) : ('k-NN start: ' + nearest.name + ' (' + nearest.metres + ' m).');
+        setStatus(msg, 'success');
       },
       onOutsideCampus: function (msg) {
         stopDetecting();

@@ -332,3 +332,9 @@
   user-select: none;
   pointer-events: none;
 }
+
+.locate-status { font-size: 0.8rem; font-weight: 600; margin-top: 6px; line-height: 1.4; }
+.locate-status.success { color: #059669; }
+.locate-status.error { color: #dc2626; }
+.locate-status.warn { color: #b45309; }
+

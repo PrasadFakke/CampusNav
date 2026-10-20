@@ -124,7 +124,7 @@ function drawMiniMap(pathIds) {
       strokeW = 3;
     } else if (isEnd) {
       fill = '#ef4444';
-        <text x="${loc.x}" y="${loc.y}" text-anchor="middle" dominant-baseline="central" font-size="30" style="user-select:none;pointer-events:none;">${icon}</text>;
+      stroke = '#b91c1c';
       strokeW = 3;
     } else if (onPath) {
       fill = '#6366f1';
@@ -240,13 +240,12 @@ document.getElementById('findBtn').onclick = findRoute;
     startDetecting();
 
     window.useMyLocation({
-      onSuccess: function (nearest) {
+      onSuccess: function (neighbours) {
+        const nearest = Array.isArray(neighbours) ? neighbours[0] : neighbours;
         fromSelect.value = nearest.id;
         stopDetecting();
-        setStatus(
-          'You are near ' + nearest.name + ' (' + nearest.metres + ' m) on this device. Location sets the start only.',
-          'success'
-        );
+        const msg = window.formatKnnStatus ? window.formatKnnStatus(neighbours) : ('k-NN start: ' + nearest.name + ' (' + nearest.metres + ' m).');
+        setStatus(msg, 'success');
       },
       onOutsideCampus: function (msg) {
         stopDetecting();

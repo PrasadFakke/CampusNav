@@ -1,23 +1,23 @@
 // ========== CAMPUS GRAPH DATA ==========
 window.CAMPUS_LOCATIONS = [
-  { id: 'entrance',      name: 'Main Entrance',                                          type: 'Entrance',  x: 408, y: 652, lat: 19.122830, lon: 72.837326 },
-  { id: 'spit',          name: "Bhavan's Sardar Patel Institute of Technology (SPIT)",   type: 'Institute', x:  50, y: 358, lat: 19.123074, lon: 72.835973 },
-  { id: 'spce',          name: 'SPCE',                                                   type: 'College',   x: 184, y: 316, lat: 19.123358, lon: 72.835619 },
-  { id: 'workshop',      name: 'SPCE Workshop',                                          type: 'Workshop',  x:  38, y: 190, lat: 19.123282, lon: 72.834831 },
-  { id: 'library',       name: 'Library',                                                type: 'Facility',  x: 498, y: 400, lat: 19.125313, lon: 72.836067 },
-  { id: 'lib-ext',       name: 'Library Extension',                                     type: 'Facility',  x: 139, y: 568, lat: 19.123200, lon: 72.836400 },
-  { id: 'bhavans-college', name: "Bhavan's College",                                    type: 'College',   x: 341, y: 421, lat: 19.125089, lon: 72.835818 },
-  { id: 'cultural',      name: "Bhavan's Cultural Centre",                              type: 'Cultural',  x: 722, y:  75, lat: 19.125073, lon: 72.834601 },
-  { id: 'spjimr',        name: 'SPJIMR',                                                 type: 'Institute', x: 150, y: 474, lat: 19.123768, lon: 72.837055 },
-  { id: 'spjimr-hostel', name: 'SPJIMR Hostel',                                         type: 'Hostel',    x: 274, y:  43, lat: 19.124822, lon: 72.833870 },
-  { id: 'hostel',        name: 'Hostel',                                                 type: 'Hostel',    x:  94, y:  54, lat: 19.125996, lon: 72.835205 },
-  { id: 'wadia',         name: 'A.H. Wadia Highschool',                                 type: 'School',    x: 520, y:  38, lat: 19.126710, lon: 72.834478 },
-  { id: 'sports-complex', name: 'Sports Complex',                                       type: 'Sports',    x: 710, y: 526, lat: 19.125900, lon: 72.836450 },
-  { id: 'playground',    name: 'Playground',                                             type: 'Sports',    x: 710, y: 316, lat: 19.126193, lon: 72.836117 },
-  { id: 'lake',          name: 'Lake',                                                   type: 'Landmark',  x: 386, y: 253, lat: 19.124558, lon: 72.834956 },
-  { id: 'canteen',       name: 'Canteen',                                                type: 'Canteen',   x: 240, y: 526, lat: 19.123450, lon: 72.836500 },
-  { id: 'medical',       name: 'Medical Centre',                                         type: 'Medical',   x: 470, y: 568, lat: 19.123050, lon: 72.836850 },
-  { id: 'security',      name: 'Security Office',                                        type: 'Emergency', x: 330, y: 652, lat: 19.122900, lon: 72.837150 }
+  { id: 'entrance',        name: 'Main Entrance',                                          type: 'Entrance',  x: 400, y: 640, lat: 19.122830, lon: 72.837326 },
+  { id: 'spit',            name: "Bhavan's Sardar Patel Institute of Technology (SPIT)",   type: 'Institute', x:  80, y: 360, lat: 19.123074, lon: 72.835973 },
+  { id: 'spce',            name: 'SPCE',                                                   type: 'College',   x: 200, y: 320, lat: 19.123358, lon: 72.835619 },
+  { id: 'workshop',        name: 'SPCE Workshop',                                          type: 'Workshop',  x:  70, y: 200, lat: 19.123282, lon: 72.834831 },
+  { id: 'library',         name: 'Library',                                                type: 'Facility',  x: 480, y: 400, lat: 19.125313, lon: 72.836067 },
+  { id: 'lib-ext',         name: 'Library Extension',                                     type: 'Facility',  x: 160, y: 560, lat: 19.123200, lon: 72.836400 },
+  { id: 'bhavans-college', name: "Bhavan's College",                                       type: 'College',   x: 340, y: 420, lat: 19.125089, lon: 72.835818 },
+  { id: 'cultural',        name: "Bhavan's Cultural Centre",                               type: 'Cultural',  x: 680, y:  90, lat: 19.125073, lon: 72.834601 },
+  { id: 'spjimr',          name: 'SPJIMR',                                                 type: 'Institute', x: 170, y: 470, lat: 19.123768, lon: 72.837055 },
+  { id: 'spjimr-hostel',   name: 'SPJIMR Hostel',                                          type: 'Hostel',    x: 280, y:  60, lat: 19.124822, lon: 72.833870 },
+  { id: 'hostel',          name: 'Hostel',                                                 type: 'Hostel',    x: 120, y:  70, lat: 19.125996, lon: 72.835205 },
+  { id: 'wadia',           name: 'A.H. Wadia Highschool',                                  type: 'School',    x: 500, y:  55, lat: 19.126710, lon: 72.834478 },
+  { id: 'sports-complex',  name: 'Sports Complex',                                         type: 'Sports',    x: 670, y: 520, lat: 19.125900, lon: 72.836450 },
+  { id: 'playground',      name: 'Playground',                                             type: 'Sports',    x: 670, y: 320, lat: 19.126193, lon: 72.836117 },
+  { id: 'lake',            name: 'Lake',                                                   type: 'Landmark',  x: 380, y: 260, lat: 19.124558, lon: 72.834956 },
+  { id: 'canteen',         name: 'Canteen',                                                type: 'Canteen',   x: 250, y: 520, lat: 19.123450, lon: 72.836500 },
+  { id: 'medical',         name: 'Medical Centre',                                         type: 'Medical',   x: 455, y: 560, lat: 19.123050, lon: 72.836850 },
+  { id: 'security',        name: 'Security Office',                                        type: 'Emergency', x: 330, y: 640, lat: 19.122900, lon: 72.837150 }
 ];
 
 window.CAMPUS_GRAPH = {

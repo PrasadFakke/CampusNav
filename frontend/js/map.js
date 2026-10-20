@@ -455,7 +455,8 @@ if (searchInput) {
     startDetecting();
 
     window.useMyLocation({
-      onSuccess: function (nearest) {
+      onSuccess: function (neighbours) {
+        const nearest = Array.isArray(neighbours) ? neighbours[0] : neighbours;
         // Mirror what selectLocation() does for a fresh From selection
         fromId = nearest.id;
         toId = null;
@@ -483,10 +484,8 @@ if (searchInput) {
         updateButtonActiveStates();
 
         stopDetecting();
-        setStatus(
-          'You are near ' + nearest.name + ' (' + nearest.metres + ' m) on this device. Location sets the start only.',
-          'success'
-        );
+        const msg = window.formatKnnStatus ? window.formatKnnStatus(neighbours) : ('k-NN start: ' + nearest.name + ' (' + nearest.metres + ' m).');
+        setStatus(msg, 'success');
       },
       onOutsideCampus: function (msg) {
         stopDetecting();
