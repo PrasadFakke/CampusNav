@@ -1,5 +1,21 @@
 window.CampusApp.requireAuth();
 
+if (!window.animateRouteWalker) {
+  const iconScript = document.createElement('script');
+  iconScript.src = '/js/node-icons.js';
+  document.head.appendChild(iconScript);
+}
+
+window.CAMPUS_NODE_ICONS = window.CAMPUS_NODE_ICONS || {
+  'entrance': '🚪', 'spit': '🏫', 'spce': '🏛️', 'workshop': '🔧', 'library': '📚',
+  'lib-ext': '📖', 'bhavans-college': '🎓', 'cultural': '🎭', 'spjimr': '🏢',
+  'spjimr-hostel': '🛏️', 'hostel': '🏠', 'wadia': '🏫', 'sports-complex': '🏟️',
+  'playground': '⚽', 'lake': '💧', 'canteen': '🍽️', 'medical': '🏥', 'security': '🛡️'
+};
+window.getNodeIcon = window.getNodeIcon || function (id) {
+  return window.CAMPUS_NODE_ICONS[id] || '📍';
+};
+
 let blocked = [];
 let selectedType = 'Canteen';
 const fromSelect = document.getElementById('fromSelect');
@@ -39,7 +55,7 @@ Object.keys(window.FACILITY_TYPES).forEach((type) => {
 
 const findBtn = document.getElementById('findBtn');
 findBtn.disabled = true;
-findBtn.textContent = 'Loading campus road graph…';
+findBtn.textContent = 'Loading campus pathways…';
 
 function bfsPathWeight(graph, path) {
   let w = 0;
@@ -60,16 +76,16 @@ function runNearest() {
 
   if (!found) {
     box.innerHTML =
-      '<div class="empty" style="color:#ef4444;font-weight:600;">BFS found no reachable ' +
+      '<div class="empty" style="color:#ef4444;font-weight:600;">No reachable ' +
       selectedType +
       '. Road closures block all pathways.</div>';
     return;
   }
 
   const cost = bfsPathWeight(graph, found.path);
-  let html = `<div class="algo-badge">BFS Nearest ${selectedType}: ${window.getLocationName(found.id)} • ${found.hops} hop(s)</div>`;
+  let html = `<div class="algo-badge">Closest ${selectedType}: ${window.getLocationName(found.id)} • ${found.hops} stop(s) away</div>`;
   if (cost != null) {
-    html += `<p class="subtitle" style="margin:10px 0 14px;font-weight:600;color:var(--text-secondary);">Total walking distance along BFS hops: <strong>${cost} units</strong>${blocked.length ? ' • road closures avoided' : ''}</p>`;
+    html += `<p class="subtitle" style="margin:10px 0 14px;font-weight:600;color:var(--text-secondary);">Total walking distance: <strong>${cost} units</strong>${blocked.length ? ' • road closures avoided' : ''}</p>`;
   }
   html += '<ul style="list-style:none;display:flex;flex-direction:column;gap:8px;">';
   found.path.forEach((id, i) => {
@@ -82,10 +98,18 @@ function runNearest() {
       : '';
     html += `<li class="loc-item" style="background:#ffffff;box-shadow:var(--shadow-sm);"><div class="loc-dot"></div><div class="loc-name">${i + 1}. ${window.getLocationName(id)}</div>${tag}</li>`;
   });
-  html += '</ul>';
-  html += `<p style="margin-top:16px;"><a class="btn primary" style="font-size:0.88rem;padding:9px 16px;" href="/navigate.html?from=${start}&to=${found.id}">Open Route in Dijkstra Navigator →</a></p>`;
+  html += `</ul>
+    <div id="mapPreview" style="margin-top:18px;">
+      <svg class="mini-svg" id="nearestMiniMap" viewBox="0 0 800 700" style="width:100%;max-height:360px;background:#ffffff;border:1.5px solid var(--border);border-radius:14px;box-shadow:var(--shadow-sm);"></svg>
+    </div>
+    <p style="margin-top:16px;"><a class="btn primary" style="font-size:0.88rem;padding:9px 16px;" href="/navigate.html?from=${start}&to=${found.id}">Open Full Route Map →</a></p>`;
   box.innerHTML = html;
-  window.CampusApp.toast(`Found nearest ${selectedType}: ${window.getLocationName(found.id)} (${found.hops} hops)`, 'success');
+
+  const miniMap = document.getElementById('nearestMiniMap');
+  if (window.renderCampusMiniMap && miniMap) {
+    window.renderCampusMiniMap(miniMap, found.path, blocked);
+  }
+  window.CampusApp.toast(`Found nearest ${selectedType}: ${window.getLocationName(found.id)} (${found.hops} stops)`, 'success');
 }
 
 findBtn.onclick = runNearest;
@@ -98,5 +122,50 @@ findBtn.onclick = runNearest;
     blocked = [];
   }
   findBtn.disabled = false;
-  findBtn.textContent = 'Find with BFS';
+  findBtn.textContent = 'Find Nearest Facility';
 })();
+
+// ========== Use My Location (nearest page) ==========
+(function wireLocateNearest() {
+  const btn = document.getElementById('locateBtn');
+  const statusEl = document.getElementById('locateStatus');
+  if (!btn || !statusEl) return;
+
+  function setStatus(msg, cls) {
+    statusEl.textContent = msg;
+    statusEl.className = 'locate-status' + (cls ? ' ' + cls : '');
+  }
+
+  function startDetecting() {
+    btn.disabled = true;
+    btn.classList.add('detecting');
+    setStatus('Detecting your position…');
+  }
+
+  function stopDetecting() {
+    btn.disabled = false;
+    btn.classList.remove('detecting');
+  }
+
+  btn.addEventListener('click', function () {
+    startDetecting();
+
+    window.useMyLocation({
+      onSuccess: function (neighbours) {
+        const nearest = Array.isArray(neighbours) ? neighbours[0] : neighbours;
+        fromSelect.value = nearest.id;
+        stopDetecting();
+        const msg = window.formatKnnStatus ? window.formatKnnStatus(neighbours) : ('k-NN start: ' + nearest.name + ' (' + nearest.metres + ' m).');
+        setStatus(msg, 'success');
+      },
+      onOutsideCampus: function (msg) {
+        stopDetecting();
+        setStatus(msg, 'warn');
+      },
+      onError: function (msg) {
+        stopDetecting();
+        setStatus(msg, 'error');
+      }
+    });
+  });
+})();

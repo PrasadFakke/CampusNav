@@ -188,7 +188,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 14px;
+  padding: 9px 16px;
   border-radius: 12px;
   color: #475569;
   text-decoration: none;
@@ -997,3 +997,173 @@ body {
     flex-direction: column;
   }
 }
+
+/* ===== Use My Location — bold coloured button ===== */
+
+@keyframes gps-ping {
+  0%   { transform: scale(0.5); opacity: 1; }
+  75%  { transform: scale(1.8); opacity: 0.25; }
+  100% { transform: scale(2.1); opacity: 0; }
+}
+
+@keyframes gps-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Banner tile that wraps the button on form pages ── */
+.locate-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  background: linear-gradient(135deg, #eef2ff 0%, #ecfeff 100%);
+  border: 1.5px solid #c7d2fe;
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+}
+
+.locate-banner > div:first-child,
+.locate-banner .locate-status {
+  width: 100%;
+}
+
+.locate-banner-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #6366f1;
+  margin-bottom: 5px;
+}
+
+/* ── The button itself ── */
+.btn-locate {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: auto;
+  align-self: flex-start;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 60%, #7c3aed 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-family: var(--font);
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow:
+    0 4px 14px rgba(79,70,229,0.30),
+    0 1px 3px rgba(0,0,0,0.10);
+  transition:
+    box-shadow 0.2s ease,
+    transform  0.15s ease,
+    opacity    0.15s ease;
+  white-space: nowrap;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-locate:not(:disabled):hover {
+  box-shadow:
+    0 6px 20px rgba(79,70,229,0.38),
+    0 0 0 4px rgba(99,102,241,0.15);
+  transform: translateY(-1px);
+}
+
+.btn-locate:not(:disabled):active {
+  transform: scale(0.98) translateY(0);
+  box-shadow: 0 2px 8px rgba(99,102,241,0.3);
+}
+
+.btn-locate:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* ── Icon wrapper ── */
+.btn-locate .loc-icon-wrap {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-locate .loc-icon-wrap svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+  stroke: #ffffff;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
+}
+
+/* Ping ring radiates from the icon */
+.btn-locate .loc-ping {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(255,255,255,0.7);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.btn-locate:not(:disabled):hover .loc-ping {
+  animation: gps-ping 1.1s cubic-bezier(0.4,0,0.6,1) infinite;
+}
+
+/* Spin the icon while detecting */
+.btn-locate.detecting .loc-icon-wrap svg {
+  animation: gps-spin 0.85s linear infinite;
+  opacity: 0.85;
+}
+
+/* ── Status strip ── */
+.locate-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+  line-height: 1.45;
+  min-height: 0;
+  transition: color 0.2s;
+}
+
+.locate-status::before {
+  content: '';
+  display: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.locate-status.success         { color: #059669; }
+.locate-status.success::before { display:block; background:#10b981; box-shadow:0 0 0 3px rgba(16,185,129,0.18); }
+
+.locate-status.error           { color: #dc2626; }
+.locate-status.error::before   { display:block; background:#ef4444; box-shadow:0 0 0 3px rgba(239,68,68,0.18); }
+
+.locate-status.warn            { color: #b45309; }
+.locate-status.warn::before    { display:block; background:#f59e0b; box-shadow:0 0 0 3px rgba(245,158,11,0.18); }
+
+/* Keep the map-page location button compact and left-aligned inside the from-box. */
+.selected-box .btn-locate {
+  width: auto;
+  align-self: flex-start;
+  margin-top: 10px;
+}
+.selected-box .btn-locate .loc-icon-wrap { width: 20px; height: 20px; }
+.selected-box .btn-locate .loc-icon-wrap svg { width: 17px; height: 17px; }

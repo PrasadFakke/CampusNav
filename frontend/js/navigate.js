@@ -1,5 +1,21 @@
 window.CampusApp.requireAuth();
 
+if (!window.animateRouteWalker) {
+  const iconScript = document.createElement('script');
+  iconScript.src = '/js/node-icons.js';
+  document.head.appendChild(iconScript);
+}
+
+window.CAMPUS_NODE_ICONS = window.CAMPUS_NODE_ICONS || {
+  'entrance': '🚪', 'spit': '🏫', 'spce': '🏛️', 'workshop': '🔧', 'library': '📚',
+  'lib-ext': '📖', 'bhavans-college': '🎓', 'cultural': '🎭', 'spjimr': '🏢',
+  'spjimr-hostel': '🛏️', 'hostel': '🏠', 'wadia': '🏫', 'sports-complex': '🏟️',
+  'playground': '⚽', 'lake': '💧', 'canteen': '🍽️', 'medical': '🏥', 'security': '🛡️'
+};
+window.getNodeIcon = window.getNodeIcon || function (id) {
+  return window.CAMPUS_NODE_ICONS[id] || '📍';
+};
+
 const locations = window.CAMPUS_LOCATIONS;
 let blocked = [];
 const fromSelect = document.getElementById('fromSelect');
@@ -36,7 +52,11 @@ function isPathEdge(u, v, pathIds) {
 function drawMiniMap(pathIds) {
   const svg = document.getElementById('miniMap');
   const pathSet = new Set(pathIds || []);
-  let edgesHtml = '';
+  const lake = locations.find((loc) => loc.id === 'lake');
+  let edgesHtml = lake
+    ? `<ellipse cx="${lake.x}" cy="${lake.y}" rx="86" ry="68" fill="none"
+        stroke="#cbd5e1" stroke-width="2.5" opacity="0.6" pointer-events="none"/>`
+    : '';
   const drawn = new Set();
 
   Object.keys(window.CAMPUS_GRAPH).forEach((u) => {
@@ -52,18 +72,41 @@ function drawMiniMap(pathIds) {
       const isPath = !isBlocked && isPathEdge(u, v, pathIds);
       const strokeColor = isBlocked ? '#ef4444' : isPath ? '#4f46e5' : '#cbd5e1';
       const animClass = isPath ? 'class="path-edge-animated"' : '';
+      const edgePoints = window.getEdgeDisplayPoints(locU, locV, 86, 68);
 
-      edgesHtml += `<line x1="${locU.x}" y1="${locU.y}" x2="${locV.x}" y2="${locV.y}"
+      edgesHtml += `<line x1="${edgePoints.x1}" y1="${edgePoints.y1}" x2="${edgePoints.x2}" y2="${edgePoints.y2}"
         stroke="${strokeColor}" stroke-width="${isPath ? 5.5 : 2.5}" stroke-dasharray="${isBlocked ? '6 4' : '0'}"
         stroke-linecap="round" opacity="${isPath ? 1 : 0.6}" ${animClass}/>`;
     });
   });
 
+  if (pathIds && pathIds.length > 2) {
+    for (let i = 1; i < pathIds.length - 1; i++) {
+      if (pathIds[i] !== 'lake') continue;
+      const from = locations.find((loc) => loc.id === pathIds[i - 1]);
+      const to = locations.find((loc) => loc.id === pathIds[i + 1]);
+      if (!from || !to) continue;
+      const lakeArc = window.getLakeArc(from, to, 86, 68);
+      if (lakeArc) {
+        edgesHtml += `<path d="${lakeArc.fullD}" fill="none" stroke="#4f46e5" stroke-width="5.5"
+          stroke-linecap="round" stroke-linejoin="round" class="path-edge-animated" pointer-events="none"/>`;
+      }
+    }
+  }
+
   let nodesHtml = '';
   locations.forEach((loc) => {
     if (loc.id === 'lake') {
-      nodesHtml += `<ellipse cx="${loc.x}" cy="${loc.y}" rx="55" ry="42" fill="#e0f2fe" stroke="#38bdf8" stroke-width="2"/>
-        <text x="${loc.x}" y="${loc.y + 4}" text-anchor="middle" fill="#0284c7" font-size="11" font-weight="700">LAKE</text>`;
+      nodesHtml += `
+        <g class="lake-promenade-group" pointer-events="none">
+          <ellipse cx="${loc.x}" cy="${loc.y}" rx="72" ry="56" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1.8" />
+          <ellipse cx="${loc.x}" cy="${loc.y}" rx="68" ry="52" fill="#e0f2fe" stroke="#38bdf8" stroke-width="2" opacity="0.95" />
+          <path d="M ${loc.x - 22} ${loc.y - 16} Q ${loc.x - 14} ${loc.y - 20} ${loc.x - 6} ${loc.y - 16} T ${loc.x + 8} ${loc.y - 16}" fill="none" stroke="#7dd3fc" stroke-width="1.8" stroke-linecap="round" opacity="0.75"/>
+          <path d="M ${loc.x + 6} ${loc.y + 12} Q ${loc.x + 14} ${loc.y + 8} ${loc.x + 22} ${loc.y + 12} T ${loc.x + 36} ${loc.y + 12}" fill="none" stroke="#7dd3fc" stroke-width="1.8" stroke-linecap="round" opacity="0.75"/>
+          <text x="${loc.x}" y="${loc.y - 3}" text-anchor="middle" dominant-baseline="central" font-size="20" style="user-select:none;">💧</text>
+          <text x="${loc.x}" y="${loc.y + 15}" text-anchor="middle" fill="#0284c7" font-size="11" font-weight="800" letter-spacing="1">LAKE</text>
+          <text x="${loc.x}" y="${loc.y + 26}" text-anchor="middle" fill="#64748b" font-size="8" font-weight="600">WALKWAY</text>
+        </g>`;
       return;
     }
     const onPath = pathSet.has(loc.id);
@@ -73,7 +116,7 @@ function drawMiniMap(pathIds) {
     let fill = '#ffffff';
     let stroke = '#4f46e5';
     let strokeW = 2.5;
-    let r = onPath ? 15 : 11;
+    let r = onPath ? 16 : 13;
 
     if (isStart) {
       fill = '#10b981';
@@ -89,12 +132,20 @@ function drawMiniMap(pathIds) {
       strokeW = 3;
     }
 
-    nodesHtml += `<circle cx="${loc.x}" cy="${loc.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeW}"/>`;
-    nodesHtml += `<text x="${loc.x}" y="${loc.y + 26}" text-anchor="middle" fill="#1e293b" font-size="11" font-weight="700">${window.getShortLabel(loc.id)}</text>`;
+    const icon = (window.CAMPUS_NODE_ICONS && window.CAMPUS_NODE_ICONS[loc.id]) || (window.getNodeIcon && window.getNodeIcon(loc.id)) || '📍';
+    nodesHtml += `<g class="mini-node" data-id="${loc.id}">
+      <circle cx="${loc.x}" cy="${loc.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeW}"/>
+      <text x="${loc.x}" y="${loc.y}" text-anchor="middle" dominant-baseline="central" font-size="18" style="user-select:none;pointer-events:none;">${icon}</text>
+      <text x="${loc.x}" y="${loc.y + 26}" text-anchor="middle" fill="#1e293b" font-size="11" font-weight="700">${window.getShortLabel(loc.id)}</text>
+    </g>`;
   });
 
   svg.innerHTML = `<rect width="800" height="700" fill="#f8fafc" rx="14"/>${edgesHtml}${nodesHtml}`;
   document.getElementById('mapPreview').style.display = 'block';
+
+  if (window.animateRouteWalker) {
+    window.animateRouteWalker(svg, pathIds, locations, 86, 68);
+  }
 }
 
 function findRoute() {
@@ -105,6 +156,9 @@ function findRoute() {
   if (from === to) {
     box.innerHTML = '<div class="empty">Source and destination are identical. Pick different locations.</div>';
     document.getElementById('mapPreview').style.display = 'none';
+    if (window.animateRouteWalker) {
+      window.animateRouteWalker(document.getElementById('miniMap'), null);
+    }
     return;
   }
 
@@ -115,10 +169,13 @@ function findRoute() {
     box.innerHTML =
       '<div class="empty" style="color:#ef4444;font-weight:600;">No path available with active road closures. Ask an administrator to reopen a pathway.</div>';
     document.getElementById('mapPreview').style.display = 'none';
+    if (window.animateRouteWalker) {
+      window.animateRouteWalker(document.getElementById('miniMap'), null);
+    }
     return;
   }
 
-  let html = `<div class="algo-badge">Dijkstra Shortest Path • Total Distance: ${alt.distance} units${blocked.length ? ' • road closures bypassed' : ''}</div>`;
+  let html = `<div class="algo-badge">Optimal Walking Route • Total Distance: ${alt.distance} units${blocked.length ? ' • road closures bypassed' : ''}</div>`;
   if (open && blocked.length && open.distance !== alt.distance) {
     html += `<p class="subtitle" style="margin-bottom:12px;color:#d97706;font-weight:600;">Original direct path was ${open.distance} units. Alternative detoured route: ${alt.distance} units.</p>`;
   }
@@ -155,4 +212,49 @@ document.getElementById('findBtn').onclick = findRoute;
     }
   } catch (_) {}
   if (params.get('from') && params.get('to')) findRoute();
+})();
+
+// ========== Use My Location (navigate page) ==========
+(function wireLocateNavigate() {
+  const btn = document.getElementById('locateBtn');
+  const statusEl = document.getElementById('locateStatus');
+  if (!btn || !statusEl) return;
+
+  function setStatus(msg, cls) {
+    statusEl.textContent = msg;
+    statusEl.className = 'locate-status' + (cls ? ' ' + cls : '');
+  }
+
+  function startDetecting() {
+    btn.disabled = true;
+    btn.classList.add('detecting');
+    setStatus('Detecting your position…');
+  }
+
+  function stopDetecting() {
+    btn.disabled = false;
+    btn.classList.remove('detecting');
+  }
+
+  btn.addEventListener('click', function () {
+    startDetecting();
+
+    window.useMyLocation({
+      onSuccess: function (neighbours) {
+        const nearest = Array.isArray(neighbours) ? neighbours[0] : neighbours;
+        fromSelect.value = nearest.id;
+        stopDetecting();
+        const msg = window.formatKnnStatus ? window.formatKnnStatus(neighbours) : ('k-NN start: ' + nearest.name + ' (' + nearest.metres + ' m).');
+        setStatus(msg, 'success');
+      },
+      onOutsideCampus: function (msg) {
+        stopDetecting();
+        setStatus(msg, 'warn');
+      },
+      onError: function (msg) {
+        stopDetecting();
+        setStatus(msg, 'error');
+      }
+    });
+  });
 })();
