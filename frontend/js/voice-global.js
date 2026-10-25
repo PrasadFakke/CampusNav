@@ -1,5 +1,5 @@
 // ========== CampusVoice global assistant (loaded on every signed-in page) ==========
-// - Floating 🎤 button on every page (pages with their own inline mic card — Find Route & Indoor — reuse the same brain)
+// - Inline voice assistant on every page (Find Route & Indoor have their own voice card)
 // - Understands: open a page, nearest facility, emergency, favourites, routes (outdoor + indoor), help, stop, logout
 (function () {
   const V = window.CampusVoice;
@@ -157,6 +157,10 @@
   async function globalHandle(alts) {
     const pi = await pageIntent(alts);
     if (pi) return pi;
+    if (page === 'map' && actions().mapVoice) {
+      const mapResult = actions().mapVoice(alts);
+      if (mapResult) return mapResult;
+    }
     const cr = await crossRoute(alts, null);
     if (cr) return cr;
     const msg = "Sorry, I didn't understand that. Try “take me to the library” or say “help”.";
@@ -167,23 +171,31 @@
   V.crossRoute = crossRoute;
   V.globalHandle = globalHandle;
 
-  // ---------- floating assistant (skipped where an inline mic card already exists) ----------
-  if (document.getElementById('micBtn')) return;
+  // ---------- inline assistant (skipped where a page already has its own voice card) ----------
+  if (page === 'dashboard' || document.getElementById('micBtn')) return;
 
   const root = document.createElement('div');
-  root.className = 'vg-root';
+  root.className = 'voice-card wide vg-root';
   root.innerHTML = `
-    <div class="vg-panel" id="vgPanel" hidden>
-      <div class="vg-head"><span class="vg-title">🎤 Voice assistant</span><button type="button" class="vg-x" id="vgClose" title="Close">✕</button></div>
+    <button type="button" class="mic-btn" id="vgMic" title="Speak a command" aria-label="Speak a command">🎤</button>
+    <div class="voice-body">
+      <div class="voice-title">Voice assistant</div>
+      <div class="voice-hint">Try “take me to the library”, “nearest canteen”, or “I need a doctor”.</div>
       <div class="voice-heard" id="vgHeard">Tap the mic and say “take me to the library”.</div>
       <form class="vg-type" id="vgForm"><input id="vgInput" type="text" placeholder="…or type a command" autocomplete="off" /><button type="submit">Go</button></form>
       <div class="vg-chips" id="vgChips"></div>
       <div class="voice-opts"><label><input type="checkbox" id="vgSpeak" checked /> Read answers aloud</label><button type="button" id="vgRepeat" style="display:none;">🔊 Repeat</button></div>
     </div>
-    <button type="button" class="vg-fab" id="vgMic" title="Voice assistant">🎤</button>`;
-  document.body.appendChild(root);
+  `;
+  const locateButton = document.getElementById('locateBtn');
+  const locateArea = locateButton && locateButton.closest('.locate-banner, .selected-box');
+  const locateStatus = locateArea && locateArea.querySelector('.locate-status');
+  const topbar = document.querySelector('.topbar');
+  if (page === 'map' && locateStatus) locateStatus.insertAdjacentElement('afterend', root);
+  else if (locateArea) locateArea.insertAdjacentElement('afterend', root);
+  else if (topbar) topbar.insertAdjacentElement('afterend', root);
+  else document.querySelector('main')?.prepend(root);
 
-  const panel = root.querySelector('#vgPanel');
   const ctl = V.attach({
     mic: root.querySelector('#vgMic'),
     heard: root.querySelector('#vgHeard'),
@@ -191,8 +203,6 @@
     repeat: root.querySelector('#vgRepeat'),
     handle: globalHandle
   });
-  root.querySelector('#vgMic').addEventListener('click', () => { panel.hidden = false; });
-  root.querySelector('#vgClose').addEventListener('click', () => { panel.hidden = true; V.stopSpeaking(); });
   root.querySelector('#vgForm').addEventListener('submit', (e) => {
     e.preventDefault();
     const inp = root.querySelector('#vgInput');
@@ -206,5 +216,4 @@
     b.addEventListener('click', () => ctl.run([c]));
     chips.appendChild(b);
   });
-  if (!V.supported) { panel.hidden = false; }
 })();
