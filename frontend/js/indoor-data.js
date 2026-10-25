@@ -41,19 +41,22 @@
       f.edgeList.forEach((e) => { plan.graph[e.a][e.b] = e.m; plan.graph[e.b][e.a] = e.m; })
     );
     // cross-floor links (stairs / lift)
-    plan.linkList = (plan.links || []).map(([a, b, m, kind]) => {
-      plan.graph[a][b] = m; plan.graph[b][a] = m;
-      (plan.byId[a].links = plan.byId[a].links || []).push({ to: b, kind });
-      (plan.byId[b].links = plan.byId[b].links || []).push({ to: a, kind });
-      return { a, b, m, kind };
-    });
+    plan.linkList = (plan.links || [])
+      .filter(([a, b]) => plan.byId[a] && plan.byId[b])
+      .map(([a, b, m, kind]) => {
+        plan.graph[a][b] = m; plan.graph[b][a] = m;
+        (plan.byId[a].links = plan.byId[a].links || []).push({ to: b, kind });
+        (plan.byId[b].links = plan.byId[b].links || []).push({ to: a, kind });
+        return { a, b, m, kind };
+      });
     return plan;
   }
 
   // Room icons (standard set). 'Stairs' is drawn as an SVG glyph, the rest are emoji.
   window.INDOOR_TYPE_ICONS = {
     Classroom: '🎓', Lab: '🔬', Office: '🏢', Library: '📚', Xerox: '🖨️',
-    Common: '🪑', Shop: '🛍️', Lift: '🛗', Stairs: 'stairs'
+    Common: '🪑', Shop: '🛍️', Lift: '🛗', Stairs: 'stairs',
+    Canteen: '🍽️', Server: '🖥️'
   };
 
   window.INDOOR_PLANS = {
@@ -243,16 +246,70 @@
             ['n6', 'n7', 4],
             ['n7', 'n8', 3]
           ]
+        },
+
+        // ---------------- 3RD FLOOR ----------------
+        // Provisional layout consistent with 2nd-floor dimensions (1024x570).
+        // Vertical transport (Lift & Stairs) aligns with floors below.
+        {
+          id: 'third',
+          label: '3rd floor',
+          tab: '3rd Floor',
+          viewBox: '0 0 1024 570',
+          scale: 36,
+          shapes: [{ x: 20, y: 20, w: 965, h: 432 }],
+          rooms: [
+            { id: 'server', x: 25, y: 27, w: 147, h: 140, fill: '#f5f3ff' },
+            { id: 'teachers', x: 23, y: 222, w: 105, h: 228, fill: '#f5f3ff' },
+            { id: 'lift', x: 160, y: 270, w: 70, h: 108, fill: '#ecfdf5', lift: true },
+            { id: 'stairs', x: 316, y: 28, w: 98, h: 152, fill: '#fef3c7', stairs: true },
+            { id: 'canteen', x: 416, y: 165, w: 270, h: 155, fill: '#fff7ed' },
+            { id: 'stairs2', x: 663, y: 28, w: 92, h: 145, fill: '#fef3c7', stairs: true },
+            { id: 'lab301', x: 775, y: 27, w: 210, h: 150, fill: '#eff6ff' },
+            { id: 'lab302', x: 775, y: 220, w: 210, h: 230, fill: '#eff6ff' }
+          ],
+          nodes: [
+            { id: 'server', name: 'Server Room', label: 'Server Room', type: 'Server', x: 98, y: 97 },
+            { id: 'teachers', name: "Teachers' Room", label: 'Teachers', type: 'Office', x: 75, y: 336 },
+            { id: 'lift', name: 'Lift', label: 'Lift', type: 'Lift', x: 195, y: 325 },
+            { id: 'stairs', name: 'Staircase 1', label: 'Stairs 1', type: 'Stairs', x: 365, y: 107 },
+            { id: 'canteen', name: '3rd Floor Canteen', label: 'Canteen', type: 'Canteen', x: 551, y: 242 },
+            { id: 'stairs2', name: 'Staircase 2', label: 'Stairs 2', type: 'Stairs', x: 710, y: 98 },
+            { id: 'lab301', name: 'Lab 301', label: 'Lab 301', type: 'Lab', x: 880, y: 102 },
+            { id: 'lab302', name: 'Lab 302', label: 'Lab 302', type: 'Lab', x: 880, y: 335 },
+            // transit corridor junctions (not selectable)
+            { id: 'c1', hidden: true, x: 195, y: 185 },
+            { id: 'c2', hidden: true, x: 320, y: 385 },
+            { id: 'c3', hidden: true, x: 715, y: 385 }
+          ],
+          edges: [
+            ['server', 'c1', 4.5, [[98, 185]]],
+            ['teachers', 'lift', 4],
+            ['lift', 'c1', 4],
+            ['c1', 'stairs', 8, [[365, 185]]],
+            ['lift', 'c2', 3.5, [[195, 385]]],
+            ['c2', 'canteen', 7],
+            ['stairs', 'canteen', 6, [[450, 185]]],
+            ['canteen', 'c3', 8, [[551, 385]]],
+            ['c3', 'lab302', 6, [[880, 385]]],
+            ['c3', 'stairs2', 9, [[715, 210]]],
+            ['stairs2', 'lab301', 6, [[760, 98]]],
+            ['lab301', 'lab302', 7]
+          ]
         }
       ],
       // Cross-floor connections: [globalIdA, globalIdB, metres, kind]
       // Stairs and lifts are separate links so the UI can route by either.
+      // Future 4th-floor branch can connect to 'third:stairs', 'third:stairs2', and 'third:lift'.
       links: [
         ['ground:stairs', 'first:n4', 10, 'Stairs'],
         ['first:n4', 'second:n4', 10, 'Stairs'],
         ['first:n8', 'second:n6', 10, 'Stairs'],
+        ['second:n4', 'third:stairs', 10, 'Stairs'],
+        ['second:n6', 'third:stairs2', 10, 'Stairs'],
         ['ground:lift', 'first:n3', 6, 'Lift'],
-        ['first:n3', 'second:n3', 6, 'Lift']
+        ['first:n3', 'second:n3', 6, 'Lift'],
+        ['second:n3', 'third:lift', 6, 'Lift']
       ]
     })
   };
