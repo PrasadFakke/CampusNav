@@ -61,3 +61,5 @@ document.getElementById('addBtn').onclick = async () => {
 load().catch((err) => {
   document.getElementById('favList').innerHTML = '<div class="empty">' + err.message + '</div>';
 });
+
+window.CampusPageActions = Object.assign(window.CampusPageActions || {}, { refresh: () => load() });
