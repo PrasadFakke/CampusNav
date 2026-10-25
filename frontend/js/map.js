@@ -335,6 +335,47 @@ function updateButtonActiveStates() {
   });
 }
 
+function handleMapVoice(alts) {
+  const V = window.CampusVoice;
+  if (!V) return null;
+  const candidates = V.outdoorCandidates(true);
+
+  for (const alternative of alts) {
+    const command = V.parseCommand(alternative);
+    if (!command.to) continue;
+
+    const destination = V.findBest(command.to, candidates)[0];
+    if (!destination) continue;
+
+    if (command.from) {
+      const start = V.findBest(command.from, candidates)[0];
+      if (!start) {
+        return { ok: false, show: `I couldn't find “${command.from}” on the map.`, say: `I couldn't find ${command.from} on the map.` };
+      }
+      if (start.id === destination.id) {
+        return { ok: false, show: 'Choose two different places for a route.', say: 'Choose two different places for a route.' };
+      }
+      fromId = null;
+      toId = null;
+      focusId = null;
+      currentPath = null;
+      selectLocation(start.id);
+      selectLocation(destination.id);
+    } else {
+      selectLocation(destination.id);
+    }
+
+    const message = command.from
+      ? `Selected ${window.getLocationName(fromId)} to ${window.getLocationName(toId)} on the map.`
+      : `Selected ${window.getLocationName(destination.id)} on the map.`;
+    return { ok: true, show: '✓ ' + message, say: message };
+  }
+
+  return null;
+}
+
+window.CampusPageActions = Object.assign(window.CampusPageActions || {}, { mapVoice: handleMapVoice });
+
 document.getElementById('calcBtn').addEventListener('click', calculatePath);
 
 document.getElementById('clearBtn').addEventListener('click', () => {

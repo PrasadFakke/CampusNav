@@ -10,6 +10,23 @@
   align-items: stretch;
 }
 
+.campus-map-main {
+  padding-top: 12px;
+}
+
+.campus-map-main > .topbar {
+  margin-bottom: 20px;
+}
+
+.campus-map-main .map-layout {
+  align-items: start;
+}
+
+.campus-map-main .map-container {
+  height: 900px;
+  min-height: 900px;
+}
+
 .map-container {
   background: #ffffff;
   border: 1px solid var(--border);
@@ -18,7 +35,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 600px;
+  min-height: 900px;
   height: 100%;
   box-shadow: var(--shadow-sm);
   position: relative;
@@ -317,6 +334,10 @@
   .map-layout {
     grid-template-columns: 1fr;
   }
+  .campus-map-main .map-container {
+    height: min(72vh, 900px);
+    min-height: 900px;
+  }
   .info-panel {
     order: 2;
   }
@@ -337,4 +358,3 @@
 .locate-status.success { color: #059669; }
 .locate-status.error { color: #dc2626; }
 .locate-status.warn { color: #b45309; }
-

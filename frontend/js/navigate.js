@@ -317,6 +317,25 @@ document.getElementById('findBtn').onclick = findRoute;
     handle
   });
 
+  document.getElementById('vgForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = document.getElementById('vgInput');
+    const command = input.value.trim();
+    if (command) {
+      ctl.run([command]);
+      input.value = '';
+    }
+  });
+
+  const chips = document.getElementById('vgChips');
+  ['Take me to the library', 'Nearest canteen', 'I need a doctor', 'Take me to room 105', 'Open dashboard'].forEach((command) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = command;
+    button.addEventListener('click', () => ctl.run([command]));
+    chips.appendChild(button);
+  });
+
   const vq = params.get('voice');
   if (vq) {
     history.replaceState(null, '', window.location.pathname);
