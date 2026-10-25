@@ -254,8 +254,17 @@
   function pullFloor(seg, plan) {
     let floorId = null;
     let t = ' ' + normalize(seg) + ' ';
-    [[/ (ground|zeroth|0th) floor /, 0], [/ (first|1st|1) floor /, 1], [/ (second|2nd|2) floor /, 2], [/ (third|3rd|3) floor /, 3]].forEach(([re, i]) => {
-      if (floorId == null && re.test(t) && plan.floors[i]) { floorId = plan.floors[i].id; t = t.replace(re, ' '); }
+    [
+      [/ (ground|zeroth|0th) floor /, 'ground'],
+      [/ (first|1st|1) floor /, 'first'],
+      [/ (second|2nd|2) floor /, 'second'],
+      [/ (third|3rd|3) floor /, 'third'],
+      [/ (fourth|4th|4) floor /, 'fourth']
+    ].forEach(([re, fid]) => {
+      if (floorId == null && re.test(t) && plan.floorById && plan.floorById[fid]) {
+        floorId = fid;
+        t = t.replace(re, ' ');
+      }
     });
     return { text: t.trim(), floorId };
   }
