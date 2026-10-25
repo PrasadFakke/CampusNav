@@ -24,7 +24,9 @@ window.CAMPUS_LOCATIONS.forEach((loc) => {
 });
 fromSelect.value = 'spit';
 
+let lastEmergency = null;
 function run(targetId) {
+  lastEmergency = null;
   const start = fromSelect.value;
   const graph = window.graphWithoutBlocked(blocked);
   const result = window.dijkstra(graph, start, targetId);
@@ -61,8 +63,22 @@ function run(targetId) {
   if (window.renderCampusMiniMap && miniMap) {
     window.renderCampusMiniMap(miniMap, result.path, blocked);
   }
+  lastEmergency = { targetName, distance: result.distance, path: result.path };
   window.CampusApp.toast(`Emergency path to ${targetName} computed (${result.distance} units)`, 'success');
 }
+
+window.CampusPageActions = Object.assign(window.CampusPageActions || {}, {
+  emergency(target) {
+    run(target);
+    if (!lastEmergency) return { ok: false, show: 'No emergency route found.', say: 'No route found. Please contact staff directly.' };
+    const names = lastEmergency.path.map((id) => window.getLocationName(id));
+    return {
+      ok: true,
+      show: `🚨 Emergency route to ${lastEmergency.targetName}`,
+      say: `Emergency route from ${names[0]} to ${lastEmergency.targetName}. ` + (names.length > 2 ? 'Go via ' + names.slice(1, -1).join(', then ') + '. ' : 'Head there directly. ') + `Distance is ${lastEmergency.distance} units.`
+    };
+  }
+});
 
 document.getElementById('medBtn').onclick = () => run('medical');
 document.getElementById('secBtn').onclick = () => run('security');
@@ -72,6 +88,8 @@ document.getElementById('secBtn').onclick = () => run('security');
     const campus = await window.CampusApp.api('/api/campus/blocked');
     blocked = campus.blockedEdges || [];
   } catch (_) {}
+  const q = new URLSearchParams(window.location.search).get('run');
+  if (q === 'medical' || q === 'security') run(q);
 })();
 
 // ========== Use My Location (emergency page) ==========
