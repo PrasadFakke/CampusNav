@@ -61,6 +61,7 @@
       id: 'spit',
       name: "Bhavan's Sardar Patel Institute of Technology (SPIT)",
       shortName: 'SPIT',
+      campusConnection: { locationId: 'spit', entranceId: 'ground:entrance' },
       defaultFloor: 'ground',
       floors: [
         // ---------------- GROUND FLOOR (+ lift) ----------------

@@ -21,6 +21,10 @@ let toId = null;
 let currentPath = null;
 let roomFilter = '';
 let lastSpeech = '';
+let campusFromId = params.get('campusFrom');
+let campusRoutePath = [];
+let campusBlockedEdges = [];
+let showingCampusMap = false;
 let mode = 'any'; // how to change floors: 'any' (shortest) | 'stairs' | 'lift'
 const ICONS = window.INDOOR_TYPE_ICONS || {};
 
@@ -281,6 +285,7 @@ function placeTitle(id) {
 
 function calculate() {
   if (!fromId || !toId) return;
+  document.getElementById('campusLeg').hidden = true;
   const g = graphFor(mode);
   const result = window.dijkstra(g, fromId, toId);
   const box = document.getElementById('pathResult');
@@ -354,6 +359,62 @@ function calculate() {
   window.CampusApp.toast(`Indoor route: ~${fmt(result.distance)}m (${secs}s)`, 'success');
 }
 
+async function findCampusPath(start, end) {
+  const campus = await window.CampusApp.api('/api/campus/blocked');
+  campusBlockedEdges = campus.blockedEdges || [];
+  const graph = window.graphWithoutBlocked(campusBlockedEdges);
+  return window.dijkstra(graph, start, end);
+}
+
+function renderCampusLeg(path, title) {
+  campusRoutePath = path;
+  syncCampusMapRoute();
+  const panel = document.getElementById('campusLeg');
+  panel.replaceChildren();
+  panel.hidden = false;
+
+  const heading = document.createElement('strong');
+  heading.textContent = title;
+  panel.appendChild(heading);
+
+  const list = document.createElement('ol');
+  path.forEach((id) => {
+    const location = window.CAMPUS_LOCATIONS.find((item) => item.id === id);
+    if (!location) return;
+    const step = document.createElement('li');
+    step.textContent = location.name;
+    list.appendChild(step);
+  });
+  panel.appendChild(list);
+
+  const entrance = plan.byId[plan.campusConnection.entranceId];
+  const connector = document.createElement('p');
+  connector.textContent = `Building connection: ${entrance.name} (${plan.floorById[entrance.floorId].tab})`;
+  panel.appendChild(connector);
+}
+
+function syncCampusMapRoute() {
+  const frame = document.getElementById('campusMapFrame');
+  if (!frame || !frame.contentWindow || !campusRoutePath.length) return;
+  frame.contentWindow.postMessage({
+    type: 'campusnav-route',
+    from: campusRoutePath[0],
+    to: campusRoutePath[campusRoutePath.length - 1]
+  }, window.location.origin);
+}
+
+function campusLegSpeech(path, isExit) {
+  const names = path.map((id) => window.getLocationName(id));
+  if (path.length === 1) {
+    return isExit
+      ? `You are at ${names[0]}. Exit the building through its ground-floor entrance.`
+      : `You are already at ${names[0]}. Enter through the ground-floor entrance.`;
+  }
+  if (isExit) return `Then walk across campus from ${names[0]} to ${names[names.length - 1]}.`;
+  const entrance = plan.byId[plan.campusConnection.entranceId];
+  return `Walk across campus from ${names[0]} to ${names[names.length - 1]}, then enter at the ${plan.floorById[entrance.floorId].tab} ${entrance.name}.`;
+}
+
 function updateButtonActiveStates() {
   document.querySelectorAll('.loc-btn').forEach((btn) => {
     const id = btn.getAttribute('data-id');
@@ -372,6 +433,30 @@ document.querySelectorAll('#modeSeg button').forEach((b) => {
 
 document.getElementById('floorUp').addEventListener('click', () => stepFloor(1));
 document.getElementById('floorDown').addEventListener('click', () => stepFloor(-1));
+
+document.getElementById('mapViewToggle').addEventListener('click', () => {
+  showingCampusMap = !showingCampusMap;
+  document.getElementById('mapViewContainer').classList.toggle('show-campus-map', showingCampusMap);
+  document.getElementById('campusMapView').hidden = !showingCampusMap;
+  const toggle = document.getElementById('mapViewToggle');
+  toggle.textContent = showingCampusMap ? 'View Indoor Map' : 'View Campus Map';
+  toggle.setAttribute('aria-pressed', String(showingCampusMap));
+  if (showingCampusMap) {
+    const frame = document.getElementById('campusMapFrame');
+    if (!frame.src) {
+      const mapUrl = new URL('/map.html', window.location.origin);
+      mapUrl.searchParams.set('embedded', '1');
+      if (campusRoutePath.length) {
+        mapUrl.searchParams.set('from', campusRoutePath[0]);
+        mapUrl.searchParams.set('to', campusRoutePath[campusRoutePath.length - 1]);
+      }
+      frame.src = mapUrl.href;
+      frame.addEventListener('load', syncCampusMapRoute);
+    } else {
+      syncCampusMapRoute();
+    }
+  }
+});
 
 document.getElementById('clearBtn').addEventListener('click', () => {
   fromId = toId = currentPath = null;
@@ -487,8 +572,15 @@ function buildSpeech(rows, distance, secs, multi) {
     let from = null, startNote = '';
     if (cmd.from) {
       const f = choose(cmd.from, activeFloorId);
-      if (f.error) return { fail: `I couldn't find “${cmd.from}” as a starting point.` };
-      from = f.id;
+      if (!f.error) {
+        from = f.id;
+      } else {
+        const campusStart = V.findBest(cmd.from, V.outdoorCandidates(true))[0];
+        if (!campusStart) return { fail: `I couldn't find “${cmd.from}” as a starting point.` };
+        campusFromId = campusStart.id;
+        from = plan.campusConnection.entranceId;
+        startNote = ` (coming from ${window.getLocationName(campusStart.id)} across campus)`;
+      }
     } else if (fromId) {
       from = fromId;
     } else {
@@ -529,13 +621,81 @@ function buildSpeech(rows, distance, secs, multi) {
     return { ok: true, show: '✓ ' + intro, say: lastSpeech };
   }
 
+  async function handleOutdoorDestination(alts) {
+    const candidates = V.outdoorCandidates(true);
+    const entranceId = plan.campusConnection.entranceId;
+
+    for (const alternative of alts) {
+      const command = V.parseCommand(alternative);
+      if (!command.to) continue;
+      const destination = V.findBest(command.to, candidates)[0];
+      if (!destination) continue;
+
+      let start = fromId;
+      if (command.from) {
+        const indoorStart = choose(command.from, activeFloorId);
+        if (!indoorStart.error) start = indoorStart.id;
+      }
+      if (!start) start = entranceId;
+
+      const campusPath = await findCampusPath(plan.campusConnection.locationId, destination.id);
+      if (!campusPath) {
+        return { ok: false, noMatch: false, show: 'No outdoor route is available because of campus road closures.', say: 'No outdoor route is available because of campus road closures.' };
+      }
+
+      fromId = null;
+      toId = null;
+      currentPath = null;
+      lastSpeech = '';
+      selectPlace(start);
+      if (start !== entranceId) {
+        selectPlace(entranceId);
+        calculate();
+      } else {
+        document.getElementById('pathResult').style.display = 'block';
+        document.getElementById('pathBadge').textContent = 'Continue outdoors from the ground-floor entrance';
+        document.getElementById('pathList').innerHTML = '';
+      }
+
+      renderCampusLeg(campusPath.path, 'Outdoor route from the building');
+      const speech = [lastSpeech, campusLegSpeech(campusPath.path, true)].filter(Boolean).join(' ');
+      lastSpeech = speech;
+      return {
+        ok: true,
+        noMatch: false,
+        show: `✓ Indoor route to the entrance, then outdoors to ${window.getLocationName(destination.id)}.`,
+        say: speech
+      };
+    }
+
+    return null;
+  }
+
   // page-wide commands first ("open dashboard", "nearest canteen", "I need a doctor"…), then rooms here,
   // then places that only exist on the outdoor map ("take me to the canteen")
   async function handle(alts) {
     const pi = await V.pageIntent(alts);
     if (pi) return pi;
     const local = handleLocal(alts);
-    if (local.ok) return local;
+    if (local.ok) {
+      const campusFrom = campusFromId;
+      if (campusFrom) {
+        const campusPath = await findCampusPath(campusFrom, plan.campusConnection.locationId);
+        if (!campusPath) {
+          return { ok: false, show: 'No outdoor route is available because of campus road closures.', say: 'No outdoor route is available because of campus road closures.' };
+        }
+        renderCampusLeg(campusPath.path, 'Outdoor route to the building');
+        local.say = `${campusLegSpeech(campusPath.path, false)} Then, ${local.say}`;
+        local.show = `✓ Campus route to ${plan.shortName} entrance, then indoor route to your destination.`;
+        campusFromId = null;
+        history.replaceState(null, '', window.location.pathname + '?building=' + encodeURIComponent(buildingId));
+      }
+      return local;
+    }
+    if (local.noMatch) {
+      const outdoor = await handleOutdoorDestination(alts);
+      if (outdoor) return outdoor;
+    }
     if (local.noMatch) { const cr = await V.crossRoute(alts, 'indoor'); if (cr) return cr; }
     return local;
   }
@@ -551,7 +711,9 @@ function buildSpeech(rows, distance, secs, multi) {
   // arrived here from another page via voice ("take me to room 105" said on the dashboard)
   const vq = params.get('voice');
   if (vq) {
-    history.replaceState(null, '', window.location.pathname + '?building=' + encodeURIComponent(buildingId));
+    const query = new URLSearchParams({ building: buildingId });
+    if (campusFromId) query.set('campusFrom', campusFromId);
+    history.replaceState(null, '', window.location.pathname + '?' + query.toString());
     ctl.run([vq]);
   }
 })();
