@@ -20,6 +20,7 @@ let fromId = null;
 let toId = null;
 let currentPath = null;
 let roomFilter = '';
+let lastSpeech = '';
 let mode = 'any'; // how to change floors: 'any' (shortest) | 'stairs' | 'lift'
 const ICONS = window.INDOOR_TYPE_ICONS || {};
 
@@ -357,6 +358,8 @@ function calculate() {
       return `<div class="step-row" data-floor="${r.floor}"><span class="n">${n}</span><span>${r.name}${multi ? ` <span class="floor-chip">${plan.floorById[r.floor].tab}</span>` : ''}</span><span class="d">${n > 1 ? '≈ ' + fmt(r.d) + ' m' : 'Start'}</span></div>`;
     })
     .join('');
+  // text version of the route (used by the voice feature)
+  lastSpeech = buildSpeech(rows, result.distance, secs, multi);
   list.querySelectorAll('.step-row[data-floor]').forEach((el) => {
     el.addEventListener('click', () => setFloor(el.getAttribute('data-floor')));
   });
@@ -383,23 +386,6 @@ document.querySelectorAll('#modeSeg button').forEach((b) => {
   });
 });
 
-// icon legend
-(function () {
-  const el = document.getElementById('iconLegend');
-  if (!el) return;
-  const seen = new Set();
-  plan.floors.forEach((f) => f.rooms.forEach((r) => {
-    const n = f.byId[r.id];
-    const t = r.stairs ? 'Stairs' : r.lift ? 'Lift' : n && n.type;
-    if (ICONS[t]) seen.add(t);
-  }));
-  el.innerHTML = [...seen].map((t) => {
-    const glyph = ICONS[t] === 'stairs'
-      ? '<svg width="16" height="16" viewBox="-10 -10 20 20">' + stairGlyph(0, 0) + '</svg>'
-      : ICONS[t];
-    return `<span class="lg-item">${glyph} ${t}</span>`;
-  }).join('');
-})();
 document.getElementById('floorUp').addEventListener('click', () => stepFloor(1));
 document.getElementById('floorDown').addEventListener('click', () => stepFloor(-1));
 
@@ -462,3 +448,126 @@ if (qf && !plan.byId[qf].hidden) {
     calculate();
   }
 }
+
+
+// ========== VOICE NAVIGATION ==========
+function buildSpeech(rows, distance, secs, multi) {
+  const named = rows.filter((r) => !r.change);
+  const where = (r) => r.name + (multi ? ' on ' + plan.floorById[r.floor].tab : '');
+  const parts = ['Starting at ' + where(named[0]) + '.'];
+  let seenFirst = false;
+  let afterChange = false;
+  rows.forEach((r) => {
+    if (r.change) { parts.push(r.text + '.'); afterChange = true; return; }
+    if (!seenFirst) { seenFirst = true; return; }
+    const isLast = r === named[named.length - 1];
+    const m = Math.max(1, Math.round(r.d));
+    if (afterChange) {
+      // distance here is the stairs/lift ride itself, so don't announce it as a walk
+      parts.push(isLast ? `You have arrived at ${where(r)}.` : `You are now at ${r.name} on ${plan.floorById[r.floor].tab}.`);
+      afterChange = false;
+      return;
+    }
+    parts.push(isLast ? `Walk about ${m} metres. You have arrived at ${where(r)}.` : `Walk about ${m} metres to ${r.name}.`);
+  });
+  const time = secs < 60 ? secs + ' seconds' : Math.round(secs / 60) + ' minute' + (Math.round(secs / 60) === 1 ? '' : 's');
+  parts.push(`Total distance is about ${Math.round(distance)} metres, around ${time} on foot.`);
+  return parts.join(' ');
+}
+
+(function setupVoice() {
+  const V = window.CampusVoice;
+  const mic = document.getElementById('micBtn');
+  if (!V || !mic) return;
+
+  const candidates = V.indoorCandidates(plan);
+
+  // choose one place from the matches (resolve duplicates like "Lift" on every floor)
+  function choose(seg, prefFloor) {
+    const pf = V.pullFloor(seg, plan);
+    let hits = V.findBest(pf.text, candidates);
+    if (!hits.length) return { error: 'none' };
+    if (pf.floorId) { const f = hits.filter((h) => h.floor === pf.floorId); if (f.length) hits = f; }
+    let pick = hits[0];
+    if (hits.length > 1) pick = hits.find((h) => h.floor === prefFloor) || hits.find((h) => h.floor === activeFloorId) || hits[0];
+    return { id: pick.id };
+  }
+
+  const nm = (id) => plan.byId[id].name + ' on ' + plan.floorById[plan.byId[id].floorId].tab;
+
+  function runOne(text) {
+    const cmd = V.parseCommand(text);
+    if (cmd.clear) return { clear: true };
+    if (!cmd.to) return null;
+
+    let from = null, startNote = '';
+    if (cmd.from) {
+      const f = choose(cmd.from, activeFloorId);
+      if (f.error) return { fail: `I couldn't find “${cmd.from}” as a starting point.` };
+      from = f.id;
+    } else if (fromId) {
+      from = fromId;
+    } else {
+      const ent = places.find((p) => (p.type || '').toLowerCase() === 'entrance');
+      if (ent) { from = ent.gid; startNote = ' (starting from the entrance)'; }
+    }
+    const t = choose(cmd.to, from ? plan.byId[from].floorId : null);
+    if (t.error) return { fail: `I couldn't find “${cmd.to}”.`, noMatch: true };
+    if (!from) return { fail: 'Where are you starting from? Say “from entrance to Room 105”.' };
+    if (from === t.id) return { fail: 'You are already at ' + plan.byId[t.id].name + '.' };
+    return { from, to: t.id, mode: cmd.mode, startNote };
+  }
+
+  function handleLocal(alts) {
+    let r = null, firstFail = null, noMatch = true;
+    for (const a of alts) {
+      const x = runOne(a);
+      if (!x) continue;
+      if (x.clear) { document.getElementById('clearBtn').click(); return { ok: true, show: 'Selection cleared.', say: 'Cleared.' }; }
+      if (x.fail) { firstFail = firstFail || x.fail; if (!x.noMatch) noMatch = false; continue; }
+      r = x; break;
+    }
+    if (!r) {
+      const msg = firstFail || "Sorry, I didn't catch a room. Try “take me to Room 105”.";
+      return { ok: false, noMatch, show: msg, say: msg.replace(/[“”]/g, '') };
+    }
+    if (r.mode) {
+      mode = r.mode;
+      document.querySelectorAll('#modeSeg button').forEach((x) => x.classList.toggle('active', x.getAttribute('data-mode') === mode));
+    }
+    fromId = null; toId = null; currentPath = null;
+    selectPlace(r.from);
+    selectPlace(r.to);
+    lastSpeech = '';
+    calculate();
+    const intro = `${nm(r.from)} → ${nm(r.to)}${r.mode ? ' (by ' + r.mode + ')' : ''}${r.startNote}`;
+    if (!lastSpeech) return { ok: false, show: 'No route found.', say: 'Sorry, I could not find a route between those places.' };
+    return { ok: true, show: '✓ ' + intro, say: lastSpeech };
+  }
+
+  // page-wide commands first ("open dashboard", "nearest canteen", "I need a doctor"…), then rooms here,
+  // then places that only exist on the outdoor map ("take me to the canteen")
+  async function handle(alts) {
+    const pi = await V.pageIntent(alts);
+    if (pi) return pi;
+    const local = handleLocal(alts);
+    if (local.ok) return local;
+    if (local.noMatch) { const cr = await V.crossRoute(alts, 'indoor'); if (cr) return cr; }
+    return local;
+  }
+
+  const ctl = V.attach({
+    mic,
+    heard: document.getElementById('voiceHeard'),
+    toggle: document.getElementById('speakToggle'),
+    repeat: document.getElementById('repeatBtn'),
+    handle
+  });
+
+  // arrived here from another page via voice ("take me to room 105" said on the dashboard)
+  const vq = params.get('voice');
+  if (vq) {
+    history.replaceState(null, '', window.location.pathname + '?building=' + encodeURIComponent(buildingId));
+    ctl.run([vq]);
+  }
+})();
