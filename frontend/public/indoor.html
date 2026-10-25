@@ -28,6 +28,14 @@
     .floor-step:disabled { opacity: 0.35; cursor: not-allowed; }
     .floor-chip { display: inline-block; background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary-border); padding: 1px 7px; border-radius: 6px; font-size: 0.68rem; font-weight: 700; margin-left: 6px; vertical-align: middle; }
     .floor-group { width: 100%; font-size: 0.72rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin: 8px 0 2px; }
+    .mode-wrap { margin: 10px 0 12px; }
+    .mode-title { font-size: 0.75rem; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+    .mode-seg { display: flex; background: var(--primary-light); border: 1px solid var(--primary-border); border-radius: 10px; padding: 3px; gap: 3px; }
+    .mode-seg button { flex: 1; border: 0; background: transparent; color: var(--primary); font: inherit; font-size: 0.82rem; font-weight: 700; padding: 7px 4px; border-radius: 8px; cursor: pointer; }
+    .mode-seg button.active { background: var(--primary); color: #fff; }
+    .path-alt { margin-top: 8px; font-size: 0.78rem; font-weight: 700; color: var(--muted); }
+    .icon-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 10px 16px 14px; font-size: 0.78rem; font-weight: 600; color: var(--muted); }
+    .icon-legend .lg-item { display: inline-flex; align-items: center; gap: 5px; }
     .step-row[data-floor] { cursor: pointer; }
     .step-row.change { background: #fffbeb; border-radius: 8px; padding-left: 8px; padding-right: 8px; }
     .step-row.change .n { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
@@ -54,6 +62,7 @@
         <div class="map-canvas">
           <svg class="indoor-svg" id="indoorSvg" viewBox="0 0 990 420"></svg>
         </div>
+        <div class="icon-legend" id="iconLegend"></div>
       </div>
       <div class="info-panel">
         <h2>Indoor Route</h2>
@@ -65,10 +74,19 @@
           <div style="font-size:0.75rem;color:var(--muted);font-weight:700;margin-bottom:2px;">TO (DESTINATION)</div>
           <div class="name" id="toName">Click another room</div>
         </div>
+        <div class="mode-wrap">
+          <div class="mode-title">CHANGING FLOORS? GO BY</div>
+          <div class="mode-seg" id="modeSeg">
+            <button data-mode="any" class="active">Shortest</button>
+            <button data-mode="stairs">Stairs</button>
+            <button data-mode="lift">🛗 Lift</button>
+          </div>
+        </div>
         <button class="btn primary full" id="calcBtn" disabled>Calculate Shortest Path</button>
         <button class="btn ghost full" id="clearBtn">Clear Selection</button>
         <div id="pathResult" style="margin-top:14px;display:none;">
           <div class="algo-badge" id="pathBadge"></div>
+          <div class="path-alt" id="pathAlt"></div>
           <div id="pathList" style="margin-top:12px;"></div>
         </div>
         <div style="margin-top:12px;">
