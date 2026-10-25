@@ -40,24 +40,8 @@ function linkKind(a, b) {
   return l ? l.kind : 'Stairs';
 }
 
-function stairGlyph(x, y) {
-  return `<polyline points="${x - 8},${y + 7} ${x - 3},${y + 7} ${x - 3},${y + 2} ${x + 2},${y + 2} ${x + 2},${y - 3} ${x + 7},${y - 3} ${x + 7},${y - 8}" fill="none" stroke="#d97706" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`;
-}
-
-function roomIcon(r, fl) {
-  const node = fl.byId[r.id];
-  const type = r.stairs ? 'Stairs' : r.lift ? 'Lift' : node && node.type;
-  const ic = ICONS[type];
-  if (!ic) return '';
-  let cx, cy;
-  if (r.iconAt) { [cx, cy] = r.iconAt; }
-  else if (r.w < 56) { cx = r.x + r.w / 2; cy = r.y + 13; }
-  else { cx = r.x + 15; cy = r.y + 15; }
-  const bg = `<circle cx="${cx}" cy="${cy}" r="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.2" opacity="0.95" pointer-events="none"/>`;
-  const glyph = ic === 'stairs'
-    ? stairGlyph(cx, cy)
-    : `<text x="${cx}" y="${cy + 0.5}" text-anchor="middle" dominant-baseline="central" font-size="14" pointer-events="none" style="user-select:none">${ic}</text>`;
-  return bg + glyph;
+function stairGlyph(x, y, size = 1) {
+  return `<polyline points="${x - 8 * size},${y + 7 * size} ${x - 3 * size},${y + 7 * size} ${x - 3 * size},${y + 2 * size} ${x + 2 * size},${y + 2 * size} ${x + 2 * size},${y - 3 * size} ${x + 7 * size},${y - 3 * size} ${x + 7 * size},${y - 8 * size}" fill="none" stroke="#d97706" stroke-width="${2.2 * size}" stroke-linecap="round" stroke-linejoin="round"/>`;
 }
 
 // accept ids with or without floor prefix (old links used e.g. "r008")
@@ -184,7 +168,6 @@ function draw() {
       h += `<line x1="${r.x + 4}" y1="${r.y + 4}" x2="${r.x + r.w - 4}" y2="${r.y + r.h - 4}" stroke="#10b981" stroke-width="1.2" pointer-events="none"/>
             <line x1="${r.x + r.w - 4}" y1="${r.y + 4}" x2="${r.x + 4}" y2="${r.y + r.h - 4}" stroke="#10b981" stroke-width="1.2" pointer-events="none"/>`;
     }
-    h += roomIcon(r, fl);
   });
 
   // edges (polylines) + distance pills
@@ -216,15 +199,16 @@ function draw() {
     const isFrom = n.gid === fromId;
     const isTo = n.gid === toId;
     const onPath = currentPath && currentPath.includes(n.gid);
-    let fill = '#ffffff', stroke = '#4f46e5', sw = 2.5, r = 14;
+    let fill = '#ffffff', stroke = '#4f46e5', sw = 2.5, r = 18;
 
-    if (isFrom) { fill = '#10b981'; stroke = '#047857'; sw = 3.5; r = 16; }
-    else if (isTo) { fill = '#ef4444'; stroke = '#b91c1c'; sw = 3.5; r = 16; }
-    else if (onPath) { fill = '#6366f1'; stroke = '#4338ca'; sw = 3; r = 15; }
+    if (isFrom) { fill = '#10b981'; stroke = '#047857'; sw = 3.5; r = 20; }
+    else if (isTo) { fill = '#ef4444'; stroke = '#b91c1c'; sw = 3.5; r = 20; }
+    else if (onPath) { fill = '#6366f1'; stroke = '#4338ca'; sw = 3; r = 19; }
 
-    const dotInner = (!isFrom && !isTo && !onPath)
-      ? `<circle cx="${n.x}" cy="${n.y}" r="5" fill="#6366f1"/>`
-      : `<circle cx="${n.x}" cy="${n.y}" r="5" fill="#ffffff"/>`;
+    const icon = ICONS[n.type] || '📍';
+    const nodeIcon = icon === 'stairs'
+      ? stairGlyph(n.x, n.y, 1.3)
+      : `<text x="${n.x}" y="${n.y + 0.5}" text-anchor="middle" dominant-baseline="central" font-size="21" pointer-events="none" style="user-select:none">${icon}</text>`;
 
     let linkTag = '';
     (n.links || []).forEach((lk, i) => {
@@ -240,7 +224,7 @@ function draw() {
 
     h += `<g class="indoor-node" data-id="${n.gid}">
       <circle cx="${n.x}" cy="${n.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.08))"/>
-      ${dotInner}
+      ${nodeIcon}
       <text x="${n.x}" y="${n.y - r - 6}" text-anchor="middle" fill="#0f172a" font-size="14" font-weight="800">${n.label || n.name}</text>
     </g>${linkTag}`;
   });

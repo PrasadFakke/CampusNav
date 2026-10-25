@@ -52,7 +52,7 @@
 
   // Room icons (standard set). 'Stairs' is drawn as an SVG glyph, the rest are emoji.
   window.INDOOR_TYPE_ICONS = {
-    Classroom: '🎓', Lab: '🔬', Office: '🏢', Library: '📚', Xerox: '🖨️',
+    Entrance: '🚪', Classroom: '🎓', Lab: '🔬', Office: '🏢', Library: '📚', Xerox: '🖨️',
     Common: '🪑', Shop: '🛍️', Lift: '🛗', Stairs: 'stairs'
   };
 
