@@ -67,7 +67,9 @@ function bfsPathWeight(graph, path) {
   return w;
 }
 
+let lastNearest = null;
 function runNearest() {
+  lastNearest = null;
   const start = fromSelect.value;
   const targets = window.FACILITY_TYPES[selectedType] || [];
   const graph = window.graphWithoutBlocked(blocked);
@@ -109,10 +111,32 @@ function runNearest() {
   if (window.renderCampusMiniMap && miniMap) {
     window.renderCampusMiniMap(miniMap, found.path, blocked);
   }
+  lastNearest = { type: selectedType, id: found.id, hops: found.hops, cost, from: start };
   window.CampusApp.toast(`Found nearest ${selectedType}: ${window.getLocationName(found.id)} (${found.hops} stops)`, 'success');
 }
 
 findBtn.onclick = runNearest;
+
+function setType(type) {
+  selectedType = type;
+  document.querySelectorAll('.facility-card').forEach((el) => {
+    const label = el.querySelector('div:last-child');
+    el.classList.toggle('active', !!label && label.textContent.trim() === type);
+  });
+}
+
+// hooks for the voice assistant
+window.CampusPageActions = Object.assign(window.CampusPageActions || {}, {
+  nearest(type) {
+    if (!window.FACILITY_TYPES[type]) return null;
+    setType(type);
+    runNearest();
+    if (!lastNearest) return { ok: false, show: 'No reachable ' + type + '.', say: 'Sorry, I could not reach any ' + type + ' right now.' };
+    const n = window.getLocationName(lastNearest.id);
+    const dist = lastNearest.cost != null ? ` Total walking distance is ${lastNearest.cost} units.` : '';
+    return { ok: true, show: `✓ Nearest ${type}: ${n}`, say: `The nearest ${type} is ${n}, ${lastNearest.hops} stop${lastNearest.hops === 1 ? '' : 's'} away from ${window.getLocationName(lastNearest.from)}.${dist}` };
+  }
+});
 
 (async () => {
   try {
@@ -123,6 +147,8 @@ findBtn.onclick = runNearest;
   }
   findBtn.disabled = false;
   findBtn.textContent = 'Find Nearest Facility';
+  const qType = new URLSearchParams(window.location.search).get('type');
+  if (qType && window.FACILITY_TYPES[qType]) { setType(qType); runNearest(); }
 })();
 
 // ========== Use My Location (nearest page) ==========
@@ -168,4 +194,4 @@ findBtn.onclick = runNearest;
       }
     });
   });
-})();
+})();
