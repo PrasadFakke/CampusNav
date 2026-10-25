@@ -8,8 +8,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/dashboard.css" />
   <link rel="stylesheet" href="/css/map.css" />
+  <link rel="stylesheet" href="/css/voice.css" />
   <style>
-    .indoor-svg { width: 100%; max-width: 1000px; height: auto; animation: zoomIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); transform-origin: center center; }
+    .map-container { align-self: start; position: sticky; top: 16px; height: auto; min-height: 0; align-items: flex-start; }
+    .map-container .map-canvas { align-items: flex-start; padding: 68px 16px 16px; }
+    .indoor-svg { width: 100%; max-width: 1100px; height: auto; animation: zoomIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); transform-origin: center center; }
     @keyframes zoomIn { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     .floor-tag { display: inline-block; background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary-border); padding: 4px 10px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; margin-left: 10px; vertical-align: middle; }
     .step-row { padding: 10px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; font-size: 0.9rem; font-weight: 600; color: var(--text); }
@@ -28,9 +31,16 @@
     .floor-step:disabled { opacity: 0.35; cursor: not-allowed; }
     .floor-chip { display: inline-block; background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary-border); padding: 1px 7px; border-radius: 6px; font-size: 0.68rem; font-weight: 700; margin-left: 6px; vertical-align: middle; }
     .floor-group { width: 100%; font-size: 0.72rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin: 8px 0 2px; }
+    .mode-wrap { margin: 10px 0 12px; }
+    .mode-title { font-size: 0.75rem; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+    .mode-seg { display: flex; background: var(--primary-light); border: 1px solid var(--primary-border); border-radius: 10px; padding: 3px; gap: 3px; }
+    .mode-seg button { flex: 1; border: 0; background: transparent; color: var(--primary); font: inherit; font-size: 0.82rem; font-weight: 700; padding: 7px 4px; border-radius: 8px; cursor: pointer; }
+    .mode-seg button.active { background: var(--primary); color: #fff; }
+    .path-alt { margin-top: 8px; font-size: 0.78rem; font-weight: 700; color: var(--muted); }
     .step-row[data-floor] { cursor: pointer; }
     .step-row.change { background: #fffbeb; border-radius: 8px; padding-left: 8px; padding-right: 8px; }
     .step-row.change .n { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+
   </style>
 </head>
 <body data-page="map">
@@ -57,6 +67,20 @@
       </div>
       <div class="info-panel">
         <h2>Indoor Route</h2>
+        <div class="voice-card" id="voiceCard">
+          <div class="voice-row">
+            <button class="mic-btn" id="micBtn" type="button" title="Speak your destination">🎤</button>
+            <div>
+              <div class="voice-title">Voice navigation</div>
+              <div class="voice-hint">Try: “Take me to Room 105” or “From entrance to library”</div>
+            </div>
+          </div>
+          <div class="voice-heard" id="voiceHeard"></div>
+          <div class="voice-opts">
+            <label><input type="checkbox" id="speakToggle" checked /> Read route aloud</label>
+            <button type="button" id="repeatBtn" style="display:none;">🔊 Repeat</button>
+          </div>
+        </div>
         <div class="selected-box" id="fromBox">
           <div style="font-size:0.75rem;color:var(--muted);font-weight:700;margin-bottom:2px;">FROM (START)</div>
           <div class="name" id="fromName">Click a room</div>
@@ -65,10 +89,19 @@
           <div style="font-size:0.75rem;color:var(--muted);font-weight:700;margin-bottom:2px;">TO (DESTINATION)</div>
           <div class="name" id="toName">Click another room</div>
         </div>
+        <div class="mode-wrap">
+          <div class="mode-title">CHANGING FLOORS? GO BY</div>
+          <div class="mode-seg" id="modeSeg">
+            <button data-mode="any" class="active">Shortest</button>
+            <button data-mode="stairs">Stairs</button>
+            <button data-mode="lift">🛗 Lift</button>
+          </div>
+        </div>
         <button class="btn primary full" id="calcBtn" disabled>Calculate Shortest Path</button>
         <button class="btn ghost full" id="clearBtn">Clear Selection</button>
         <div id="pathResult" style="margin-top:14px;display:none;">
           <div class="algo-badge" id="pathBadge"></div>
+          <div class="path-alt" id="pathAlt"></div>
           <div id="pathList" style="margin-top:12px;"></div>
         </div>
         <div style="margin-top:12px;">
@@ -91,6 +124,8 @@
   <script src="/js/indoor-data.js"></script>
   <script src="/js/sidebar.js"></script>
   <script src="/js/app.js"></script>
+  <script src="/js/voice.js"></script>
+  <script src="/js/voice-global.js"></script>
   <script src="/js/indoor.js"></script>
 </body>
 </html>

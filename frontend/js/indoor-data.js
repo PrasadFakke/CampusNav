@@ -43,11 +43,18 @@
     // cross-floor links (stairs / lift)
     plan.linkList = (plan.links || []).map(([a, b, m, kind]) => {
       plan.graph[a][b] = m; plan.graph[b][a] = m;
-      plan.byId[a].link = { to: b, kind }; plan.byId[b].link = { to: a, kind };
+      (plan.byId[a].links = plan.byId[a].links || []).push({ to: b, kind });
+      (plan.byId[b].links = plan.byId[b].links || []).push({ to: a, kind });
       return { a, b, m, kind };
     });
     return plan;
   }
+
+  // Room icons (standard set). 'Stairs' is drawn as an SVG glyph, the rest are emoji.
+  window.INDOOR_TYPE_ICONS = {
+    Classroom: '🎓', Lab: '🔬', Office: '🏢', Library: '📚', Xerox: '🖨️',
+    Common: '🪑', Shop: '🛍️', Lift: '🛗', Stairs: 'stairs'
+  };
 
   window.INDOOR_PLANS = {
     spit: buildPlan({
@@ -56,7 +63,7 @@
       shortName: 'SPIT',
       defaultFloor: 'ground',
       floors: [
-        // ---------------- GROUND FLOOR (unchanged) ----------------
+        // ---------------- GROUND FLOOR (+ lift) ----------------
         {
           id: 'ground',
           label: 'Ground floor',
@@ -66,8 +73,9 @@
           rooms: [
             { id: 'r008', x: 30, y: 35, w: 167, h: 141, fill: '#eff6ff' },
             { id: 'stairs', x: 260, y: 36, w: 40, h: 146, fill: '#fef3c7', stairs: true },
+            { id: 'lift', x: 190, y: 196, w: 64, h: 100, fill: '#ecfdf5', lift: true },
             { id: 'office', x: 337, y: 99, w: 140, h: 85, fill: '#f5f3ff' },
-            { id: 'xerox', x: 307, y: 185, w: 33, h: 47, fill: '#ecfdf5' },
+            { id: 'xerox', x: 307, y: 185, w: 33, h: 47, fill: '#ecfdf5', iconAt: [354, 208] },
             { id: 'r003', x: 755, y: 37, w: 125, h: 70, fill: '#eff6ff' },
             { id: 'r001', x: 880, y: 60, w: 75, h: 188, fill: '#eff6ff' }
           ],
@@ -75,6 +83,7 @@
             { id: 'entrance', name: 'Entrance / Exit', label: 'Entrance', type: 'Entrance', x: 60, y: 333 },
             { id: 'r008', name: 'Room 008', label: '008', type: 'Classroom', x: 133, y: 107 },
             { id: 'stairs', name: 'Staircase', label: 'Stairs', type: 'Stairs', x: 280, y: 110 },
+            { id: 'lift', name: 'Lift', label: 'Lift', type: 'Lift', x: 222, y: 250 },
             { id: 'xerox', name: 'Alams Xerox', label: 'Xerox', type: 'Xerox', x: 323, y: 208 },
             { id: 'office', name: 'Office', label: 'Office', type: 'Office', x: 411, y: 142 },
             { id: 'r003', name: 'Room 003', label: '003', type: 'Classroom', x: 824, y: 72 },
@@ -104,7 +113,11 @@
             ['hall-mid', 'r003', 11],
             ['r003', 'r001', 3],
             ['r001', 'hall-6'],
-            ['r003', 'hall-5']
+            ['r003', 'hall-5'],
+            // lift (from corrected ground-floor map): entrance 3 m, Room 008 4.5 m, mid-left transit
+            ['lift', 'entrance', 3],
+            ['lift', 'r008', 4.5],
+            ['lift', 'hall-2', 2.5]
           ]
         },
 
@@ -127,7 +140,7 @@
           rooms: [
             { id: 'n1', x: 21, y: 17, w: 112, h: 121, fill: '#eff6ff' },
             { id: 'n2', x: 21, y: 313, w: 109, h: 165, fill: '#eff6ff' },
-            { id: 'n3', x: 218, y: 351, w: 48, h: 103, fill: '#ecfdf5', lift: true },
+            { id: 'n3', x: 218, y: 340, w: 48, h: 114, fill: '#ecfdf5', lift: true },
             { id: 'n4', x: 328, y: 25, w: 79, h: 122, fill: '#fef3c7', stairs: true },
             { id: 'n5', x: 402, y: 145, w: 90, h: 173, fill: '#f5f3ff' },
             { id: 'n6', x: 536, y: 513, w: 214, h: 31, fill: '#ecfdf5' },
@@ -179,12 +192,68 @@
             ['j2', 'n10', 1],
             ['j2', 'n9', 2.5]
           ]
+        },
+
+        // ---------------- 2ND FLOOR (traced from floor-plan image 1024x570) ----------------
+        // Distances = the metre labels written on the plan.
+        {
+          id: 'second',
+          label: '2nd floor',
+          tab: '2nd Floor',
+          viewBox: '0 0 1024 570',
+          scale: 36,
+          shapes: [{ x: 20, y: 20, w: 965, h: 432 }],
+          rooms: [
+            { id: 'n1', x: 25, y: 27, w: 147, h: 115, fill: '#eff6ff' },
+            { id: 'n2', x: 23, y: 222, w: 99, h: 228, fill: '#eff6ff' },
+            { id: 'n3', x: 160, y: 270, w: 70, h: 108, fill: '#ecfdf5', lift: true },
+            { id: 'n4', x: 316, y: 28, w: 98, h: 152, fill: '#fef3c7', stairs: true },
+            { id: 'n5', x: 416, y: 165, w: 274, h: 143, fill: '#f5f3ff' },
+            { id: 'n6', x: 663, y: 30, w: 92, h: 137, fill: '#fef3c7', stairs: true },
+            { id: 'n7', x: 760, y: 27, w: 135, h: 91, fill: '#eff6ff' },
+            { id: 'n8', x: 897, y: 32, w: 88, h: 93, fill: '#eff6ff' },
+            { id: 'n9', x: 893, y: 125, w: 82, h: 327, fill: '#fff7ed' }
+          ],
+          nodes: [
+            { id: 'n1', name: 'Control Systems Lab', label: 'Control Lab', type: 'Lab', x: 99, y: 89 },
+            { id: 'n2', name: 'Room 207', label: '207', type: 'Classroom', x: 73, y: 329 },
+            { id: 'n3', name: 'Lift', label: 'Lift', type: 'Lift', x: 195, y: 325 },
+            { id: 'n4', name: 'Staircase 1', label: 'Stairs 1', type: 'Stairs', x: 365, y: 107 },
+            { id: 'n5', name: 'Library', label: 'Library', type: 'Library', x: 552, y: 236 },
+            { id: 'n6', name: 'Staircase 2', label: 'Stairs 2', type: 'Stairs', x: 710, y: 98 },
+            { id: 'n7', name: 'Room 203', label: '203', type: 'Classroom', x: 829, y: 76 },
+            { id: 'n8', name: 'Room 202', label: '202', type: 'Classroom', x: 940, y: 76 },
+            { id: 'n9', name: 'Techsop', label: 'Techsop', type: 'Shop', x: 935, y: 288 },
+            // transit corridor junctions (not selectable)
+            { id: 'n10', hidden: true, x: 193, y: 181 },
+            { id: 'n11', hidden: true, x: 323, y: 385 },
+            { id: 'n12', hidden: true, x: 715, y: 381 }
+          ],
+          edges: [
+            ['n1', 'n10', 4.5, [[99, 181]]],
+            ['n10', 'n4', 8, [[365, 181]]],     // 4 m + 4 m labels on the plan
+            ['n10', 'n3', 4],
+            ['n2', 'n3', 3],
+            ['n3', 'n11', 3, [[195, 385]]],
+            ['n11', 'n5', 6],
+            ['n5', 'n12', 8, [[552, 381]]],
+            ['n12', 'n9', 6, [[935, 381]]],
+            ['n12', 'n6', 9, [[802, 210]]],
+            ['n6', 'n9', null, [[838, 205], [838, 288]]],
+            ['n6', 'n7', 4],
+            ['n7', 'n8', 3]
+          ]
         }
       ],
       // Cross-floor connections: [globalIdA, globalIdB, metres, kind]
-      // Only ONE connection is defined (ground Staircase <-> 1st-floor Staircase 1).
-      // Add more here, e.g. ['ground:lift', 'first:n3', 6, 'Lift'], once those exist on the ground plan.
-      links: [['ground:stairs', 'first:n4', 10, 'Stairs']]
+      // Stairs and lifts are separate links so the UI can route by either.
+      links: [
+        ['ground:stairs', 'first:n4', 10, 'Stairs'],
+        ['first:n4', 'second:n4', 10, 'Stairs'],
+        ['first:n8', 'second:n6', 10, 'Stairs'],
+        ['ground:lift', 'first:n3', 6, 'Lift'],
+        ['first:n3', 'second:n3', 6, 'Lift']
+      ]
     })
   };
 

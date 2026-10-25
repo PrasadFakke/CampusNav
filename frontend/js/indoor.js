@@ -20,6 +20,45 @@ let fromId = null;
 let toId = null;
 let currentPath = null;
 let roomFilter = '';
+let lastSpeech = '';
+let mode = 'any'; // how to change floors: 'any' (shortest) | 'stairs' | 'lift'
+const ICONS = window.INDOOR_TYPE_ICONS || {};
+
+// graph with only the chosen kind of cross-floor link kept
+function graphFor(m) {
+  if (m === 'any') return plan.graph;
+  const g = {};
+  Object.keys(plan.graph).forEach((k) => { g[k] = Object.assign({}, plan.graph[k]); });
+  plan.linkList.forEach((l) => {
+    if (l.kind.toLowerCase() !== m) { delete g[l.a][l.b]; delete g[l.b][l.a]; }
+  });
+  return g;
+}
+
+function linkKind(a, b) {
+  const l = plan.linkList.find((x) => (x.a === a && x.b === b) || (x.a === b && x.b === a));
+  return l ? l.kind : 'Stairs';
+}
+
+function stairGlyph(x, y) {
+  return `<polyline points="${x - 8},${y + 7} ${x - 3},${y + 7} ${x - 3},${y + 2} ${x + 2},${y + 2} ${x + 2},${y - 3} ${x + 7},${y - 3} ${x + 7},${y - 8}" fill="none" stroke="#d97706" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`;
+}
+
+function roomIcon(r, fl) {
+  const node = fl.byId[r.id];
+  const type = r.stairs ? 'Stairs' : r.lift ? 'Lift' : node && node.type;
+  const ic = ICONS[type];
+  if (!ic) return '';
+  let cx, cy;
+  if (r.iconAt) { [cx, cy] = r.iconAt; }
+  else if (r.w < 56) { cx = r.x + r.w / 2; cy = r.y + 13; }
+  else { cx = r.x + 15; cy = r.y + 15; }
+  const bg = `<circle cx="${cx}" cy="${cy}" r="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.2" opacity="0.95" pointer-events="none"/>`;
+  const glyph = ic === 'stairs'
+    ? stairGlyph(cx, cy)
+    : `<text x="${cx}" y="${cy + 0.5}" text-anchor="middle" dominant-baseline="central" font-size="14" pointer-events="none" style="user-select:none">${ic}</text>`;
+  return bg + glyph;
+}
 
 // accept ids with or without floor prefix (old links used e.g. "r008")
 function resolveId(id) {
@@ -145,6 +184,7 @@ function draw() {
       h += `<line x1="${r.x + 4}" y1="${r.y + 4}" x2="${r.x + r.w - 4}" y2="${r.y + r.h - 4}" stroke="#10b981" stroke-width="1.2" pointer-events="none"/>
             <line x1="${r.x + r.w - 4}" y1="${r.y + 4}" x2="${r.x + 4}" y2="${r.y + r.h - 4}" stroke="#10b981" stroke-width="1.2" pointer-events="none"/>`;
     }
+    h += roomIcon(r, fl);
   });
 
   // edges (polylines) + distance pills
@@ -187,21 +227,22 @@ function draw() {
       : `<circle cx="${n.x}" cy="${n.y}" r="5" fill="#ffffff"/>`;
 
     let linkTag = '';
-    if (n.link) {
-      const tf = plan.byId[n.link.to].floorId;
+    (n.links || []).forEach((lk, i) => {
+      const tf = plan.byId[lk.to].floorId;
       const up = plan.floors.findIndex((f) => f.id === tf) > plan.floors.findIndex((f) => f.id === fl.id);
       const t = (up ? '▲ ' : '▼ ') + plan.floorById[tf].tab;
       const tw = t.length * 6 + 12;
-      linkTag = `<rect x="${n.x - tw / 2}" y="${n.y + r + 4}" width="${tw}" height="16" rx="8" fill="#fef3c7" stroke="#f59e0b" pointer-events="none"/>
-        <text x="${n.x}" y="${n.y + r + 15.5}" text-anchor="middle" fill="#92400e" font-size="10" font-weight="700" pointer-events="none">${t}</text>`;
-    }
+      const ty = n.y + r + 4 + i * 19;
+      linkTag += `<g class="floor-jump" data-floor="${tf}" style="cursor:pointer"><title>Go ${up ? 'up' : 'down'} by ${lk.kind.toLowerCase()}</title>
+        <rect x="${n.x - tw / 2}" y="${ty}" width="${tw}" height="16" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+        <text x="${n.x}" y="${ty + 11.5}" text-anchor="middle" fill="#92400e" font-size="10" font-weight="700" pointer-events="none">${t}</text></g>`;
+    });
 
     h += `<g class="indoor-node" data-id="${n.gid}">
       <circle cx="${n.x}" cy="${n.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.08))"/>
       ${dotInner}
       <text x="${n.x}" y="${n.y - r - 6}" text-anchor="middle" fill="#0f172a" font-size="14" font-weight="800">${n.label || n.name}</text>
-      ${linkTag}
-    </g>`;
+    </g>${linkTag}`;
   });
 
   // scale bar
@@ -213,6 +254,9 @@ function draw() {
 
   svg.innerHTML = h;
 
+  svg.querySelectorAll('.floor-jump').forEach((el) => {
+    el.addEventListener('click', (ev) => { ev.stopPropagation(); setFloor(el.getAttribute('data-floor')); });
+  });
   svg.querySelectorAll('.indoor-node, .room-hit').forEach((el) => {
     el.addEventListener('click', () => {
       const id = el.getAttribute('data-id');
@@ -253,14 +297,16 @@ function placeTitle(id) {
 
 function calculate() {
   if (!fromId || !toId) return;
-  const result = window.dijkstra(plan.graph, fromId, toId);
+  const g = graphFor(mode);
+  const result = window.dijkstra(g, fromId, toId);
   const box = document.getElementById('pathResult');
   const badge = document.getElementById('pathBadge');
   const list = document.getElementById('pathList');
   box.style.display = 'block';
 
   if (!result) {
-    badge.textContent = 'No indoor path found between these rooms';
+    badge.textContent = mode === 'any' ? 'No indoor path found between these rooms' : `No route using ${mode} between these rooms`;
+    document.getElementById('pathAlt').textContent = '';
     badge.style.background = '#fef2f2';
     badge.style.color = '#dc2626';
     badge.style.borderColor = '#fecaca';
@@ -269,6 +315,13 @@ function calculate() {
   }
 
   currentPath = result.path;
+  // stairs vs lift comparison for multi-floor trips
+  const alt = document.getElementById('pathAlt');
+  const rs = window.dijkstra(graphFor('stairs'), fromId, toId);
+  const rl = window.dijkstra(graphFor('lift'), fromId, toId);
+  alt.textContent = plan.byId[fromId].floorId !== plan.byId[toId].floorId
+    ? `Stairs: ${rs ? '≈ ' + fmt(rs.distance) + ' m' : 'n/a'}  •  Lift: ${rl ? '≈ ' + fmt(rl.distance) + ' m' : 'n/a'}`
+    : '';
   const secs = Math.round(result.distance / WALK_SPEED);
   const multi = floorsOnPath().length > 1;
   badge.textContent = `Dijkstra • Distance: ≈ ${fmt(result.distance)} m • ~${secs < 60 ? secs + ' sec' : Math.round(secs / 60) + ' min'} walk${multi ? ' • across floors' : ''}`;
@@ -283,10 +336,10 @@ function calculate() {
     const cur = plan.byId[result.path[i]];
     if (i > 0) {
       const prev = plan.byId[result.path[i - 1]];
-      acc += plan.graph[prev.gid][cur.gid];
+      acc += g[prev.gid][cur.gid];
       if (prev.floorId !== cur.floorId) {
         const goingUp = plan.floors.findIndex((f) => f.id === cur.floorId) > plan.floors.findIndex((f) => f.id === prev.floorId);
-        rows.push({ change: true, text: `${prev.link ? prev.link.kind : 'Stairs'} ${goingUp ? 'up' : 'down'} to ${plan.floorById[cur.floorId].tab}`, floor: cur.floorId });
+        rows.push({ change: true, text: `${linkKind(prev.gid, cur.gid)} ${goingUp ? 'up' : 'down'} to ${plan.floorById[cur.floorId].tab}`, floor: cur.floorId });
       }
     }
     if (!cur.hidden) {
@@ -305,6 +358,8 @@ function calculate() {
       return `<div class="step-row" data-floor="${r.floor}"><span class="n">${n}</span><span>${r.name}${multi ? ` <span class="floor-chip">${plan.floorById[r.floor].tab}</span>` : ''}</span><span class="d">${n > 1 ? '≈ ' + fmt(r.d) + ' m' : 'Start'}</span></div>`;
     })
     .join('');
+  // text version of the route (used by the voice feature)
+  lastSpeech = buildSpeech(rows, result.distance, secs, multi);
   list.querySelectorAll('.step-row[data-floor]').forEach((el) => {
     el.addEventListener('click', () => setFloor(el.getAttribute('data-floor')));
   });
@@ -323,6 +378,14 @@ function updateButtonActiveStates() {
 }
 
 document.getElementById('calcBtn').addEventListener('click', calculate);
+document.querySelectorAll('#modeSeg button').forEach((b) => {
+  b.addEventListener('click', () => {
+    mode = b.getAttribute('data-mode');
+    document.querySelectorAll('#modeSeg button').forEach((x) => x.classList.toggle('active', x === b));
+    if (fromId && toId) calculate();
+  });
+});
+
 document.getElementById('floorUp').addEventListener('click', () => stepFloor(1));
 document.getElementById('floorDown').addEventListener('click', () => stepFloor(-1));
 
@@ -385,3 +448,126 @@ if (qf && !plan.byId[qf].hidden) {
     calculate();
   }
 }
+
+
+// ========== VOICE NAVIGATION ==========
+function buildSpeech(rows, distance, secs, multi) {
+  const named = rows.filter((r) => !r.change);
+  const where = (r) => r.name + (multi ? ' on ' + plan.floorById[r.floor].tab : '');
+  const parts = ['Starting at ' + where(named[0]) + '.'];
+  let seenFirst = false;
+  let afterChange = false;
+  rows.forEach((r) => {
+    if (r.change) { parts.push(r.text + '.'); afterChange = true; return; }
+    if (!seenFirst) { seenFirst = true; return; }
+    const isLast = r === named[named.length - 1];
+    const m = Math.max(1, Math.round(r.d));
+    if (afterChange) {
+      // distance here is the stairs/lift ride itself, so don't announce it as a walk
+      parts.push(isLast ? `You have arrived at ${where(r)}.` : `You are now at ${r.name} on ${plan.floorById[r.floor].tab}.`);
+      afterChange = false;
+      return;
+    }
+    parts.push(isLast ? `Walk about ${m} metres. You have arrived at ${where(r)}.` : `Walk about ${m} metres to ${r.name}.`);
+  });
+  const time = secs < 60 ? secs + ' seconds' : Math.round(secs / 60) + ' minute' + (Math.round(secs / 60) === 1 ? '' : 's');
+  parts.push(`Total distance is about ${Math.round(distance)} metres, around ${time} on foot.`);
+  return parts.join(' ');
+}
+
+(function setupVoice() {
+  const V = window.CampusVoice;
+  const mic = document.getElementById('micBtn');
+  if (!V || !mic) return;
+
+  const candidates = V.indoorCandidates(plan);
+
+  // choose one place from the matches (resolve duplicates like "Lift" on every floor)
+  function choose(seg, prefFloor) {
+    const pf = V.pullFloor(seg, plan);
+    let hits = V.findBest(pf.text, candidates);
+    if (!hits.length) return { error: 'none' };
+    if (pf.floorId) { const f = hits.filter((h) => h.floor === pf.floorId); if (f.length) hits = f; }
+    let pick = hits[0];
+    if (hits.length > 1) pick = hits.find((h) => h.floor === prefFloor) || hits.find((h) => h.floor === activeFloorId) || hits[0];
+    return { id: pick.id };
+  }
+
+  const nm = (id) => plan.byId[id].name + ' on ' + plan.floorById[plan.byId[id].floorId].tab;
+
+  function runOne(text) {
+    const cmd = V.parseCommand(text);
+    if (cmd.clear) return { clear: true };
+    if (!cmd.to) return null;
+
+    let from = null, startNote = '';
+    if (cmd.from) {
+      const f = choose(cmd.from, activeFloorId);
+      if (f.error) return { fail: `I couldn't find “${cmd.from}” as a starting point.` };
+      from = f.id;
+    } else if (fromId) {
+      from = fromId;
+    } else {
+      const ent = places.find((p) => (p.type || '').toLowerCase() === 'entrance');
+      if (ent) { from = ent.gid; startNote = ' (starting from the entrance)'; }
+    }
+    const t = choose(cmd.to, from ? plan.byId[from].floorId : null);
+    if (t.error) return { fail: `I couldn't find “${cmd.to}”.`, noMatch: true };
+    if (!from) return { fail: 'Where are you starting from? Say “from entrance to Room 105”.' };
+    if (from === t.id) return { fail: 'You are already at ' + plan.byId[t.id].name + '.' };
+    return { from, to: t.id, mode: cmd.mode, startNote };
+  }
+
+  function handleLocal(alts) {
+    let r = null, firstFail = null, noMatch = true;
+    for (const a of alts) {
+      const x = runOne(a);
+      if (!x) continue;
+      if (x.clear) { document.getElementById('clearBtn').click(); return { ok: true, show: 'Selection cleared.', say: 'Cleared.' }; }
+      if (x.fail) { firstFail = firstFail || x.fail; if (!x.noMatch) noMatch = false; continue; }
+      r = x; break;
+    }
+    if (!r) {
+      const msg = firstFail || "Sorry, I didn't catch a room. Try “take me to Room 105”.";
+      return { ok: false, noMatch, show: msg, say: msg.replace(/[“”]/g, '') };
+    }
+    if (r.mode) {
+      mode = r.mode;
+      document.querySelectorAll('#modeSeg button').forEach((x) => x.classList.toggle('active', x.getAttribute('data-mode') === mode));
+    }
+    fromId = null; toId = null; currentPath = null;
+    selectPlace(r.from);
+    selectPlace(r.to);
+    lastSpeech = '';
+    calculate();
+    const intro = `${nm(r.from)} → ${nm(r.to)}${r.mode ? ' (by ' + r.mode + ')' : ''}${r.startNote}`;
+    if (!lastSpeech) return { ok: false, show: 'No route found.', say: 'Sorry, I could not find a route between those places.' };
+    return { ok: true, show: '✓ ' + intro, say: lastSpeech };
+  }
+
+  // page-wide commands first ("open dashboard", "nearest canteen", "I need a doctor"…), then rooms here,
+  // then places that only exist on the outdoor map ("take me to the canteen")
+  async function handle(alts) {
+    const pi = await V.pageIntent(alts);
+    if (pi) return pi;
+    const local = handleLocal(alts);
+    if (local.ok) return local;
+    if (local.noMatch) { const cr = await V.crossRoute(alts, 'indoor'); if (cr) return cr; }
+    return local;
+  }
+
+  const ctl = V.attach({
+    mic,
+    heard: document.getElementById('voiceHeard'),
+    toggle: document.getElementById('speakToggle'),
+    repeat: document.getElementById('repeatBtn'),
+    handle
+  });
+
+  // arrived here from another page via voice ("take me to room 105" said on the dashboard)
+  const vq = params.get('voice');
+  if (vq) {
+    history.replaceState(null, '', window.location.pathname + '?building=' + encodeURIComponent(buildingId));
+    ctl.run([vq]);
+  }
+})();
