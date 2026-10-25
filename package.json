@@ -5,7 +5,8 @@
   "main": "backend/server.js",
   "scripts": {
     "start": "node backend/server.js",
-    "dev": "node backend/server.js"
+    "dev": "node backend/server.js",
+    "generate-qr": "node scripts/generate-qr-codes.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -14,5 +15,12 @@
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.5.1"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "jsqr": "^1.4.0",
+    "pdfkit": "^0.20.2",
+    "pngjs": "^7.0.0",
+    "qrcode": "^1.5.4"
   }
 }
