@@ -139,16 +139,20 @@
       return Promise.resolve()
         .then(() => opts.handle(alts))
         .then(respond)
-        .catch((e) => { console.error(e); note('Something went wrong handling that.', true); });
+        .catch((e) => {
+          console.error('Voice command handling failed:', e);
+          const message = e instanceof Error && e.message ? e.message : 'Please try the command again.';
+          note('Could not handle that voice command: ' + message, true);
+        });
     }
 
     if (!SR) {
       mic.disabled = true;
       note('Voice input needs Chrome, Edge or Safari — you can still type a command.', true);
-      return { supported: false, respond, run };
+      return { supported: false, respond, run, startListening: () => {} };
     }
 
-    mic.addEventListener('click', () => {
+    function startListening() {
       if (listening && rec) { rec.stop(); return; }
       stopSpeaking();
       rec = new SR();
@@ -179,11 +183,13 @@
         if (finalAlts && finalAlts.length) run(finalAlts);
       };
       try { rec.start(); } catch (e) { setListening(false); }
-    });
+    }
+
+    mic.addEventListener('click', startListening);
 
     if (opts.repeat) opts.repeat.addEventListener('click', () => speak(lastSay));
     if (opts.toggle) opts.toggle.addEventListener('change', () => { if (!opts.toggle.checked) stopSpeaking(); });
-    return { supported: true, respond, run };
+    return { supported: true, respond, run, startListening };
   }
 
   // ---------- shared place vocab (campus + indoor) ----------

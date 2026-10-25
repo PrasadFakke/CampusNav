@@ -133,16 +133,21 @@
         </button>
         <div class="locate-status" id="locateStatus"></div>
       </div>
-      <div class="voice-card wide" id="voiceCard">
-        <button class="mic-btn" id="micBtn" type="button" title="Speak your destination">🎤</button>
+      <div class="voice-card wide vg-root" id="voiceCard">
+        <button class="mic-btn" id="micBtn" type="button" title="Speak a command" aria-label="Speak a command">🎤</button>
         <div class="voice-body">
-          <div class="voice-title">Voice navigation</div>
-          <div class="voice-hint">Try: “Take me to the library” or “From main entrance to canteen”</div>
-          <div class="voice-heard" id="voiceHeard"></div>
-        </div>
-        <div class="voice-opts" style="flex-direction:column;align-items:flex-start;">
-          <label><input type="checkbox" id="speakToggle" checked /> Read route aloud</label>
-          <button type="button" id="repeatBtn" style="display:none;margin-left:0;">🔊 Repeat</button>
+          <div class="voice-title">Voice assistant</div>
+          <div class="voice-hint">Try “take me to the library”, “nearest canteen”, or “I need a doctor”.</div>
+          <div class="voice-heard" id="voiceHeard">Tap the mic and say “take me to the library”.</div>
+          <form class="vg-type" id="vgForm">
+            <input id="vgInput" type="text" placeholder="…or type a command" autocomplete="off" />
+            <button type="submit">Go</button>
+          </form>
+          <div class="vg-chips" id="vgChips"></div>
+          <div class="voice-opts">
+            <label><input type="checkbox" id="speakToggle" checked /> Read answers aloud</label>
+            <button type="button" id="repeatBtn" style="display:none;">🔊 Repeat</button>
+          </div>
         </div>
       </div>
       <div class="route-form">

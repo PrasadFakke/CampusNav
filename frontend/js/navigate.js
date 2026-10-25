@@ -1,4 +1,33 @@
-window.CampusApp.requireAuth();
+// Navigation page is public (supports direct QR code entry without requiring login)
+const currentUser = window.CampusApp.user();
+if (currentUser) {
+  const nameEl = document.getElementById('userName');
+  const avatarEl = document.getElementById('avatar');
+  const roleEl = document.getElementById('userRole');
+  if (nameEl) nameEl.textContent = currentUser.username;
+  if (avatarEl) avatarEl.textContent = (currentUser.username || '?').charAt(0).toUpperCase();
+  if (roleEl) roleEl.textContent = currentUser.role === 'admin' ? 'Admin' : 'Student';
+  document.querySelectorAll('.admin-only').forEach((el) => {
+    el.style.display = currentUser.role === 'admin' ? '' : 'none';
+  });
+  const logout = document.getElementById('logoutBtn');
+  if (logout) {
+    logout.addEventListener('click', () => {
+      localStorage.clear();
+      window.location.href = '/';
+    });
+  }
+} else {
+  // Guest student visiting via QR code or direct link
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.textContent = 'Login';
+    logoutBtn.addEventListener('click', () => { window.location.href = '/'; });
+  }
+  document.querySelectorAll('.admin-only').forEach((el) => {
+    el.style.display = 'none';
+  });
+}
 
 if (!window.animateRouteWalker) {
   const iconScript = document.createElement('script');
@@ -30,8 +59,28 @@ fromSelect.value = 'entrance';
 toSelect.value = 'library';
 
 const params = new URLSearchParams(window.location.search);
-if (params.get('from')) fromSelect.value = params.get('from');
-if (params.get('to')) toSelect.value = params.get('to');
+// Support both 'start' (from QR codes) and 'from' (from deep-links)
+const rawStart = params.get('start') || params.get('from');
+const rawTo = params.get('to');
+
+// Validate and apply start location against real supported locations
+if (rawStart) {
+  const validStart = locations.find((l) => l.id === rawStart && l.id !== 'lake');
+  if (validStart) {
+    fromSelect.value = validStart.id;
+    if (toSelect.value === validStart.id) {
+      toSelect.value = validStart.id === 'library' ? 'entrance' : 'library';
+    }
+  }
+}
+
+// Validate and apply destination location
+if (rawTo) {
+  const validTo = locations.find((l) => l.id === rawTo && l.id !== 'lake');
+  if (validTo) {
+    toSelect.value = validTo.id;
+  }
+}
 
 document.getElementById('swapBtn').onclick = () => {
   const t = fromSelect.value;
@@ -208,16 +257,25 @@ document.getElementById('findBtn').onclick = findRoute;
 
 (async () => {
   try {
-    const campus = await window.CampusApp.api('/api/campus/blocked');
-    blocked = campus.blockedEdges || [];
-    document.getElementById('blockedNote').textContent = blocked.length
-      ? `${blocked.length} pathway(s) currently closed — routes automatically reroute.`
-      : 'All campus pathways are currently open.';
-    if (blocked.length) {
-      document.getElementById('blockedNote').style.color = '#dc2626';
+    const token = window.CampusApp.token();
+    const res = await fetch('/api/campus/blocked', {
+      headers: token ? { Authorization: 'Bearer ' + token } : {}
+    });
+    if (res.ok) {
+      const campus = await res.json();
+      blocked = campus.blockedEdges || [];
+      document.getElementById('blockedNote').textContent = blocked.length
+        ? `${blocked.length} pathway(s) currently closed — routes automatically reroute.`
+        : 'All campus pathways are currently open.';
+      if (blocked.length) {
+        document.getElementById('blockedNote').style.color = '#dc2626';
+      }
     }
   } catch (_) {}
-  if (params.get('from') && params.get('to')) findRoute();
+  // Auto-route only if both start and to were explicitly supplied in URL and are valid
+  if (rawStart && rawTo && locations.some((l) => l.id === rawStart && l.id !== 'lake') && locations.some((l) => l.id === rawTo && l.id !== 'lake')) {
+    findRoute();
+  }
 })();
 
 // ========== Use My Location (navigate page) ==========
@@ -315,6 +373,25 @@ document.getElementById('findBtn').onclick = findRoute;
     toggle: document.getElementById('speakToggle'),
     repeat: document.getElementById('repeatBtn'),
     handle
+  });
+
+  document.getElementById('vgForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = document.getElementById('vgInput');
+    const command = input.value.trim();
+    if (command) {
+      ctl.run([command]);
+      input.value = '';
+    }
+  });
+
+  const chips = document.getElementById('vgChips');
+  ['Take me to the library', 'Nearest canteen', 'I need a doctor', 'Take me to room 105', 'Open dashboard'].forEach((command) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = command;
+    button.addEventListener('click', () => ctl.run([command]));
+    chips.appendChild(button);
   });
 
   const vq = params.get('voice');

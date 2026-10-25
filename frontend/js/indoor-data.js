@@ -54,9 +54,8 @@
 
   // Room icons (standard set). 'Stairs' is drawn as an SVG glyph, the rest are emoji.
   window.INDOOR_TYPE_ICONS = {
-    Classroom: '🎓', Lab: '🔬', Office: '🏢', Library: '📚', Xerox: '🖨️',
-    Common: '🪑', Shop: '🛍️', Lift: '🛗', Stairs: 'stairs',
-    Canteen: '🍽️', Server: '🖥️'
+    Entrance: '🚪', Classroom: '🎓', Lab: '🔬', Office: '🏢', Library: '📚', Xerox: '🖨️',
+    Common: '🪑', Shop: '🛍️', Lift: '🛗', Stairs: 'stairs'
   };
 
   window.INDOOR_PLANS = {
@@ -64,6 +63,7 @@
       id: 'spit',
       name: "Bhavan's Sardar Patel Institute of Technology (SPIT)",
       shortName: 'SPIT',
+      campusConnection: { locationId: 'spit', entranceId: 'ground:entrance' },
       defaultFloor: 'ground',
       floors: [
         // ---------------- GROUND FLOOR (+ lift) ----------------
