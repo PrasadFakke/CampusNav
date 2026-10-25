@@ -1,5 +1,9 @@
 window.CampusApp.requireAuth();
 
+const mapParams = new URLSearchParams(window.location.search);
+const embeddedMap = mapParams.get('embedded') === '1';
+if (embeddedMap) document.body.classList.add('embedded-campus-map');
+
 if (!window.animateRouteWalker) {
   const iconScript = document.createElement('script');
   iconScript.src = '/js/node-icons.js';
@@ -24,6 +28,8 @@ let currentPath = null;
 let favourites = [];
 let focusId = null;
 let searchQuery = '';
+let embeddedMapReady = false;
+let queuedEmbeddedRoute = null;
 
 function liveGraph() {
   return window.graphWithoutBlocked(blocked);
@@ -300,6 +306,7 @@ function calculatePath() {
     if (window.animateRouteWalker) {
       window.animateRouteWalker(document.getElementById('campusSvg'), null);
     }
+
     return;
   }
 
@@ -328,12 +335,83 @@ function calculatePath() {
   window.CampusApp.toast(`Route computed: ${result.distance} units across ${result.path.length} stops`, 'success');
 }
 
+function applyEmbeddedRoute(startId, endId) {
+  if (!locations.some((location) => location.id === startId) ||
+      !locations.some((location) => location.id === endId) ||
+      startId === endId) return;
+  fromId = null;
+  toId = null;
+  focusId = null;
+  currentPath = null;
+  selectLocation(startId);
+  selectLocation(endId);
+  calculatePath();
+}
+
+if (embeddedMap) {
+  window.addEventListener('message', (event) => {
+    if (event.origin !== window.location.origin || event.source !== window.parent) return;
+    const message = event.data;
+    if (!message || message.type !== 'campusnav-route') return;
+    if (embeddedMapReady) {
+      applyEmbeddedRoute(message.from, message.to);
+    } else {
+      queuedEmbeddedRoute = message;
+    }
+  });
+}
+
 function updateButtonActiveStates() {
   document.querySelectorAll('.loc-btn').forEach((btn) => {
     const id = btn.getAttribute('data-id');
     btn.classList.toggle('active', id === fromId || id === toId);
   });
 }
+
+function handleMapVoice(alts) {
+  const V = window.CampusVoice;
+  if (!V) return null;
+  const candidates = V.outdoorCandidates(true);
+
+  for (const alternative of alts) {
+    const command = V.parseCommand(alternative);
+    if (!command.to) continue;
+
+    const destination = V.findBest(command.to, candidates)[0];
+    if (!destination) continue;
+
+    if (command.from) {
+      const start = V.findBest(command.from, candidates)[0];
+      if (!start) {
+        return { ok: false, show: `I couldn't find “${command.from}” on the map.`, say: `I couldn't find ${command.from} on the map.` };
+      }
+      if (start.id === destination.id) {
+        return { ok: false, show: 'Choose two different places for a route.', say: 'Choose two different places for a route.' };
+      }
+      fromId = null;
+      toId = null;
+      focusId = null;
+      currentPath = null;
+      selectLocation(start.id);
+      selectLocation(destination.id);
+      calculatePath();
+    } else {
+      selectLocation(destination.id);
+    }
+
+    const message = command.from
+      ? `Calculated a route from ${window.getLocationName(fromId)} to ${window.getLocationName(toId)} on the map.`
+      : `Selected ${window.getLocationName(destination.id)} on the map.`;
+    return { ok: true, show: '✓ ' + message, say: message };
+  }
+
+  return null;
+}
+
+window.CampusPageActions = Object.assign(window.CampusPageActions || {}, {
+  mapVoice: handleMapVoice,
+  outdoorStart: () => fromId || 'entrance'
+});
 
 document.getElementById('calcBtn').addEventListener('click', calculatePath);
 
@@ -427,6 +505,16 @@ if (searchInput) {
   renderLocButtons();
   drawEdges(null);
   drawNodes();
+  if (embeddedMap) {
+    embeddedMapReady = true;
+    const initialRoute = queuedEmbeddedRoute || {
+      from: mapParams.get('from'),
+      to: mapParams.get('to')
+    };
+    if (initialRoute.from && initialRoute.to) {
+      applyEmbeddedRoute(initialRoute.from, initialRoute.to);
+    }
+  }
 })();
 
 // ========== Use My Location (map page) ==========

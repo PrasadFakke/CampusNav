@@ -37,6 +37,16 @@
     .mode-seg button { flex: 1; border: 0; background: transparent; color: var(--primary); font: inherit; font-size: 0.82rem; font-weight: 700; padding: 7px 4px; border-radius: 8px; cursor: pointer; }
     .mode-seg button.active { background: var(--primary); color: #fff; }
     .path-alt { margin-top: 8px; font-size: 0.78rem; font-weight: 700; color: var(--muted); }
+    .campus-leg { margin: 12px 0; padding: 12px; border: 1px solid var(--primary-border); border-radius: 12px; background: var(--primary-light); color: var(--text); font-size: 0.82rem; }
+    .campus-leg ol { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 8px 0 0 20px; font-weight: 600; }
+    .campus-leg p { margin-top: 8px; color: var(--muted); font-weight: 600; }
+    .campus-map-view { width: 100%; min-height: 700px; }
+    .campus-map-view[hidden] { display: none; }
+    .campus-map-view iframe { display: block; width: 100%; height: 900px; border: 0; }
+    #mapViewContainer.show-campus-map { height: auto; min-height: 0; }
+    #mapViewContainer.show-campus-map > .map-canvas,
+    #mapViewContainer.show-campus-map > .floor-bar { display: none; }
+    .map-view-toggle[aria-pressed="true"] { background: var(--primary); color: #fff; }
     .step-row[data-floor] { cursor: pointer; }
     .step-row.change { background: #fffbeb; border-radius: 8px; padding-left: 8px; padding-right: 8px; }
     .step-row.change .n { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
@@ -51,11 +61,11 @@
         <p class="subtitle">Click From room → To room → Calculate shortest indoor path.</p>
       </div>
       <div class="topbar-actions">
-        <a href="/map.html" class="btn primary">← Back to Campus Map</a>
+        <button type="button" class="btn primary map-view-toggle" id="mapViewToggle" aria-pressed="false">View Campus Map</button>
       </div>
     </header>
     <div class="map-layout">
-      <div class="map-container">
+      <div class="map-container" id="mapViewContainer">
         <div class="floor-bar">
           <button class="floor-step" id="floorDown" title="Go down a floor">▼</button>
           <div class="floor-tabs" id="floorTabs"></div>
@@ -63,6 +73,9 @@
         </div>
         <div class="map-canvas">
           <svg class="indoor-svg" id="indoorSvg" viewBox="0 0 990 420"></svg>
+        </div>
+        <div class="campus-map-view" id="campusMapView" hidden>
+          <iframe id="campusMapFrame" title="Campus Map" loading="lazy"></iframe>
         </div>
       </div>
       <div class="info-panel">
@@ -101,6 +114,7 @@
         <button class="btn ghost full" id="clearBtn">Clear Selection</button>
         <div id="pathResult" style="margin-top:14px;display:none;">
           <div class="algo-badge" id="pathBadge"></div>
+          <div id="campusLeg" class="campus-leg" hidden></div>
           <div class="path-alt" id="pathAlt"></div>
           <div id="pathList" style="margin-top:12px;"></div>
         </div>
@@ -122,6 +136,7 @@
   </main>
   <script src="/js/graph-data.js"></script>
   <script src="/js/indoor-data.js"></script>
+  <script src="/js/node-icons.js"></script>
   <script src="/js/sidebar.js"></script>
   <script src="/js/app.js"></script>
   <script src="/js/voice.js"></script>

@@ -1,5 +1,5 @@
 // ========== CampusVoice global assistant (loaded on every signed-in page) ==========
-// - Floating 🎤 button on every page (pages with their own inline mic card — Find Route & Indoor — reuse the same brain)
+// - Inline voice assistant on every page (Find Route & Indoor have their own voice card)
 // - Understands: open a page, nearest facility, emergency, favourites, routes (outdoor + indoor), help, stop, logout
 (function () {
   const V = window.CampusVoice;
@@ -149,7 +149,16 @@
       else target = idd.score ? 'in' : od.score ? 'out' : null;
 
       if (target === 'out') return { ok: true, show: 'Opening Find Route…', go: '/navigate.html?voice=' + encodeURIComponent(a) };
-      if (target === 'in') return { ok: true, show: 'Opening the indoor map…', go: '/indoor.html?building=' + encodeURIComponent(planId) + '&voice=' + encodeURIComponent(a) };
+      if (target === 'in') {
+        const explicitStart = cmd.from && V.findBest(cmd.from, outC)[0];
+        const campusFrom = explicitStart ? explicitStart.id : (actions().outdoorStart && actions().outdoorStart()) || 'entrance';
+        return {
+          ok: true,
+          show: 'Routing across campus to the building, then indoors…',
+          go: '/indoor.html?building=' + encodeURIComponent(planId) +
+            '&campusFrom=' + encodeURIComponent(campusFrom) + '&voice=' + encodeURIComponent(a)
+        };
+      }
     }
     return null;
   }
@@ -157,6 +166,10 @@
   async function globalHandle(alts) {
     const pi = await pageIntent(alts);
     if (pi) return pi;
+    if (page === 'map' && actions().mapVoice) {
+      const mapResult = actions().mapVoice(alts);
+      if (mapResult) return mapResult;
+    }
     const cr = await crossRoute(alts, null);
     if (cr) return cr;
     const msg = "Sorry, I didn't understand that. Try “take me to the library” or say “help”.";
@@ -167,23 +180,54 @@
   V.crossRoute = crossRoute;
   V.globalHandle = globalHandle;
 
-  // ---------- floating assistant (skipped where an inline mic card already exists) ----------
+  // ---------- global assistant (skipped where a page already has its own voice card) ----------
   if (document.getElementById('micBtn')) return;
 
   const root = document.createElement('div');
-  root.className = 'vg-root';
-  root.innerHTML = `
-    <div class="vg-panel" id="vgPanel" hidden>
-      <div class="vg-head"><span class="vg-title">🎤 Voice assistant</span><button type="button" class="vg-x" id="vgClose" title="Close">✕</button></div>
-      <div class="voice-heard" id="vgHeard">Tap the mic and say “take me to the library”.</div>
-      <form class="vg-type" id="vgForm"><input id="vgInput" type="text" placeholder="…or type a command" autocomplete="off" /><button type="submit">Go</button></form>
-      <div class="vg-chips" id="vgChips"></div>
-      <div class="voice-opts"><label><input type="checkbox" id="vgSpeak" checked /> Read answers aloud</label><button type="button" id="vgRepeat" style="display:none;">🔊 Repeat</button></div>
-    </div>
-    <button type="button" class="vg-fab" id="vgMic" title="Voice assistant">🎤</button>`;
-  document.body.appendChild(root);
+  const floating = page === 'dashboard';
+  root.className = floating ? 'vg-floating-root' : 'voice-card wide vg-root';
+  if (floating) {
+    root.innerHTML = `
+      <section class="vg-floating-panel" id="vgPanel" aria-label="Voice assistant" hidden>
+        <div class="vg-floating-head">
+          <span class="voice-title">Voice assistant</span>
+          <button type="button" class="vg-close" id="vgClose" aria-label="Close voice assistant">×</button>
+        </div>
+        <div class="voice-row">
+          <button type="button" class="mic-btn" id="vgMic" title="Speak a command" aria-label="Speak a command">🎤</button>
+          <div class="voice-hint">Try “take me to the library”, “nearest canteen”, or “I need a doctor”.</div>
+        </div>
+        <div class="voice-heard" id="vgHeard" aria-live="polite">Tap the mic and say “take me to the library”.</div>
+        <form class="vg-type" id="vgForm"><input id="vgInput" type="text" placeholder="…or type a command" autocomplete="off" /><button type="submit">Go</button></form>
+        <div class="vg-chips" id="vgChips"></div>
+        <div class="voice-opts"><label><input type="checkbox" id="vgSpeak" checked /> Read answers aloud</label><button type="button" id="vgRepeat" style="display:none;">🔊 Repeat</button></div>
+      </section>
+      <button type="button" class="vg-fab" id="vgToggle" title="Start voice command" aria-label="Start voice command" aria-expanded="false">🎤</button>
+    `;
+  } else {
+    root.innerHTML = `
+      <button type="button" class="mic-btn" id="vgMic" title="Speak a command" aria-label="Speak a command">🎤</button>
+      <div class="voice-body">
+        <div class="voice-title">Voice assistant</div>
+        <div class="voice-hint">Try “take me to the library”, “nearest canteen”, or “I need a doctor”.</div>
+        <div class="voice-heard" id="vgHeard">Tap the mic and say “take me to the library”.</div>
+        <form class="vg-type" id="vgForm"><input id="vgInput" type="text" placeholder="…or type a command" autocomplete="off" /><button type="submit">Go</button></form>
+        <div class="vg-chips" id="vgChips"></div>
+        <div class="voice-opts"><label><input type="checkbox" id="vgSpeak" checked /> Read answers aloud</label><button type="button" id="vgRepeat" style="display:none;">🔊 Repeat</button></div>
+      </div>
+    `;
+  }
+  const locateButton = document.getElementById('locateBtn');
+  const locateArea = locateButton && locateButton.closest('.locate-banner, .selected-box');
+  const locateStatus = locateArea && locateArea.querySelector('.locate-status');
+  const topbar = document.querySelector('.topbar');
+  if (floating) document.body.appendChild(root);
+  else if (page === 'map' && locateStatus) locateStatus.insertAdjacentElement('afterend', root);
+  else if (locateArea) locateArea.insertAdjacentElement('afterend', root);
+  else if (topbar) topbar.insertAdjacentElement('afterend', root);
+  else document.querySelector('main')?.prepend(root);
 
-  const panel = root.querySelector('#vgPanel');
+  const panel = floating ? root.querySelector('#vgPanel') : null;
   const ctl = V.attach({
     mic: root.querySelector('#vgMic'),
     heard: root.querySelector('#vgHeard'),
@@ -191,8 +235,21 @@
     repeat: root.querySelector('#vgRepeat'),
     handle: globalHandle
   });
-  root.querySelector('#vgMic').addEventListener('click', () => { panel.hidden = false; });
-  root.querySelector('#vgClose').addEventListener('click', () => { panel.hidden = true; V.stopSpeaking(); });
+  if (floating) {
+    const toggle = root.querySelector('#vgToggle');
+    const close = root.querySelector('#vgClose');
+    toggle.addEventListener('click', () => {
+      panel.hidden = false;
+      toggle.setAttribute('aria-expanded', 'true');
+      ctl.startListening();
+    });
+    close.addEventListener('click', () => {
+      panel.hidden = true;
+      toggle.setAttribute('aria-expanded', 'false');
+      V.stopSpeaking();
+    });
+  }
+
   root.querySelector('#vgForm').addEventListener('submit', (e) => {
     e.preventDefault();
     const inp = root.querySelector('#vgInput');
@@ -206,5 +263,4 @@
     b.addEventListener('click', () => ctl.run([c]));
     chips.appendChild(b);
   });
-  if (!V.supported) { panel.hidden = false; }
 })();
