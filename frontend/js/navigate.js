@@ -148,7 +148,9 @@ function drawMiniMap(pathIds) {
   }
 }
 
+let lastRouteSpeech = '';
 function findRoute() {
+  lastRouteSpeech = '';
   const from = fromSelect.value;
   const to = toSelect.value;
   const box = document.getElementById('resultBox');
@@ -196,6 +198,10 @@ function findRoute() {
   box.innerHTML = html;
   drawMiniMap(alt.path);
   window.CampusApp.toast(`Route computed: ${alt.distance} units across ${alt.path.length} steps`, 'success');
+  const names = alt.path.map((id) => window.getLocationName(id));
+  lastRouteSpeech = `Route from ${names[0]} to ${names[names.length - 1]}. ` +
+    (names.length > 2 ? 'Go via ' + names.slice(1, -1).join(', then ') + '. ' : 'Head there directly. ') +
+    `Total distance is ${alt.distance} units${blocked.length ? ', avoiding closed pathways' : ''}.`;
 }
 
 document.getElementById('findBtn').onclick = findRoute;
@@ -257,4 +263,63 @@ document.getElementById('findBtn').onclick = findRoute;
       }
     });
   });
+})();
+
+// ========== Voice navigation (navigate page) ==========
+(function setupVoice() {
+  const V = window.CampusVoice;
+  const mic = document.getElementById('micBtn');
+  if (!V || !mic) return;
+
+  const cands = V.outdoorCandidates();
+  const nameOf = (id) => window.getLocationName(id);
+
+  function handleLocal(alts) {
+    let fail = null, noMatch = true;
+    for (const a of alts) {
+      const cmd = V.parseCommand(a);
+      if (cmd.clear) { fromSelect.value = 'entrance'; return { ok: true, show: 'Reset to Main Entrance.', say: 'Reset.' }; }
+      if (!cmd.to) continue;
+      const t = V.findBest(cmd.to, cands)[0];
+      if (!t) { fail = fail || `I couldn't find “${cmd.to}” on campus.`; continue; }
+      noMatch = false;
+      let f = null;
+      if (cmd.from) {
+        f = V.findBest(cmd.from, cands)[0];
+        if (!f) { fail = `I couldn't find “${cmd.from}” as a starting point.`; continue; }
+      }
+      const fromId = f ? f.id : fromSelect.value;
+      if (fromId === t.id) { fail = 'You are already at ' + nameOf(t.id) + '.'; continue; }
+      fromSelect.value = fromId;
+      toSelect.value = t.id;
+      findRoute();
+      if (!lastRouteSpeech) return { ok: false, show: 'No route found.', say: 'Sorry, I could not find a route.' };
+      return { ok: true, show: `✓ ${nameOf(fromId)} → ${nameOf(t.id)}`, say: lastRouteSpeech };
+    }
+    const msg = fail || "Sorry, I didn't catch a place. Try “take me to the library”.";
+    return { ok: false, noMatch, show: msg, say: msg.replace(/[“”]/g, '') };
+  }
+
+  async function handle(alts) {
+    const pi = await V.pageIntent(alts);
+    if (pi) return pi;
+    const local = handleLocal(alts);
+    if (local.ok) return local;
+    if (local.noMatch) { const cr = await V.crossRoute(alts, 'navigate'); if (cr) return cr; }
+    return local;
+  }
+
+  const ctl = V.attach({
+    mic,
+    heard: document.getElementById('voiceHeard'),
+    toggle: document.getElementById('speakToggle'),
+    repeat: document.getElementById('repeatBtn'),
+    handle
+  });
+
+  const vq = params.get('voice');
+  if (vq) {
+    history.replaceState(null, '', window.location.pathname);
+    ctl.run([vq]);
+  }
 })();

@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/dashboard.css" />
+  <link rel="stylesheet" href="/css/voice.css" />
   <style>
     .route-form {
       display: grid;
@@ -132,6 +133,18 @@
         </button>
         <div class="locate-status" id="locateStatus"></div>
       </div>
+      <div class="voice-card wide" id="voiceCard">
+        <button class="mic-btn" id="micBtn" type="button" title="Speak your destination">🎤</button>
+        <div class="voice-body">
+          <div class="voice-title">Voice navigation</div>
+          <div class="voice-hint">Try: “Take me to the library” or “From main entrance to canteen”</div>
+          <div class="voice-heard" id="voiceHeard"></div>
+        </div>
+        <div class="voice-opts" style="flex-direction:column;align-items:flex-start;">
+          <label><input type="checkbox" id="speakToggle" checked /> Read route aloud</label>
+          <button type="button" id="repeatBtn" style="display:none;margin-left:0;">🔊 Repeat</button>
+        </div>
+      </div>
       <div class="route-form">
         <div class="field"><label>Starting Location (From)</label><select id="fromSelect"></select></div>
         <button class="swap-btn" id="swapBtn" type="button" title="Swap locations">⇄</button>
@@ -148,6 +161,8 @@
   <script src="/js/graph-data.js"></script>
   <script src="/js/sidebar.js"></script>
   <script src="/js/app.js"></script>
+  <script src="/js/voice.js"></script>
+  <script src="/js/voice-global.js"></script>
   <script src="/js/locate.js"></script>
   <script src="/js/navigate.js"></script>
 </body>
