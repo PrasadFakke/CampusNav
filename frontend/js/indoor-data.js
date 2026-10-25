@@ -41,12 +41,14 @@
       f.edgeList.forEach((e) => { plan.graph[e.a][e.b] = e.m; plan.graph[e.b][e.a] = e.m; })
     );
     // cross-floor links (stairs / lift)
-    plan.linkList = (plan.links || []).map(([a, b, m, kind]) => {
-      plan.graph[a][b] = m; plan.graph[b][a] = m;
-      (plan.byId[a].links = plan.byId[a].links || []).push({ to: b, kind });
-      (plan.byId[b].links = plan.byId[b].links || []).push({ to: a, kind });
-      return { a, b, m, kind };
-    });
+    plan.linkList = (plan.links || [])
+      .filter(([a, b]) => plan.byId[a] && plan.byId[b])
+      .map(([a, b, m, kind]) => {
+        plan.graph[a][b] = m; plan.graph[b][a] = m;
+        (plan.byId[a].links = plan.byId[a].links || []).push({ to: b, kind });
+        (plan.byId[b].links = plan.byId[b].links || []).push({ to: a, kind });
+        return { a, b, m, kind };
+      });
     return plan;
   }
 
@@ -243,16 +245,73 @@
             ['n6', 'n7', 4],
             ['n7', 'n8', 3]
           ]
+        },
+
+        // ---------------- 4TH FLOOR ----------------
+        // Provisional layout consistent with 2nd-floor dimensions (1024x570).
+        // Vertical transport (Lift & Stairs) aligns with floors below.
+        // HOD Room is nested inside Lab 412 as a visually distinct executive office sub-area.
+        {
+          id: 'fourth',
+          label: '4th floor',
+          tab: '4th Floor',
+          viewBox: '0 0 1024 570',
+          scale: 36,
+          shapes: [{ x: 20, y: 20, w: 965, h: 432 }],
+          rooms: [
+            { id: 'lab410', x: 25, y: 27, w: 250, h: 180, fill: '#eff6ff' },
+            { id: 'lift', x: 160, y: 270, w: 70, h: 108, fill: '#ecfdf5', lift: true },
+            { id: 'stairs', x: 316, y: 28, w: 98, h: 152, fill: '#fef3c7', stairs: true },
+            { id: 'stairs2', x: 663, y: 28, w: 92, h: 145, fill: '#fef3c7', stairs: true },
+            // Lab 412 outer room rectangle
+            { id: 'lab412', x: 440, y: 165, w: 430, h: 250, fill: '#eff6ff' },
+            // HOD Room sub-area located inside Lab 412 (distinct purple styling)
+            { id: 'hod', x: 680, y: 180, w: 175, h: 120, fill: '#f5f3ff' }
+          ],
+          nodes: [
+            { id: 'lab410', name: 'Lab 410', label: 'Lab 410', type: 'Lab', x: 150, y: 110 },
+            { id: 'lift', name: 'Lift', label: 'Lift', type: 'Lift', x: 195, y: 325 },
+            { id: 'stairs', name: 'Staircase 1', label: 'Stairs 1', type: 'Stairs', x: 365, y: 107 },
+            { id: 'stairs2', name: 'Staircase 2', label: 'Stairs 2', type: 'Stairs', x: 710, y: 98 },
+            { id: 'lab412', name: 'Lab 412', label: 'Lab 412', type: 'Lab', x: 550, y: 290 },
+            { id: 'hod', name: 'HOD Room', label: 'HOD Room', type: 'Office', x: 765, y: 240 },
+            // transit corridor junctions (not selectable)
+            { id: 'c1', hidden: true, x: 260, y: 240 },
+            { id: 'c2', hidden: true, x: 440, y: 290 },
+            { id: 'c3', hidden: true, x: 710, y: 340 }
+          ],
+          edges: [
+            ['lab410', 'c1', 6, [[260, 110]]],
+            ['lift', 'c1', 4.5, [[260, 325]]],
+            ['c1', 'stairs', 6, [[365, 240]]],
+            ['stairs', 'c2', 7, [[440, 107]]],
+            ['lift', 'c2', 7.5, [[300, 325], [300, 290]]],
+            ['c2', 'lab412', 5],
+            ['lab412', 'hod', 5],
+            ['lab412', 'c3', 6, [[550, 340]]],
+            ['c3', 'stairs2', 8, [[710, 200]]]
+          ]
         }
       ],
       // Cross-floor connections: [globalIdA, globalIdB, metres, kind]
       // Stairs and lifts are separate links so the UI can route by either.
+      // NOTE: On this independent 4th-floor branch (branched from main), the 3rd floor does not exist.
+      // Vertical lift shaft links 2nd floor directly to 4th floor (12m).
+      // Staircase links 2nd floor to 4th floor (20m provisional cross-floor link).
+      // Integration points for when 3rd-floor branch is integrated:
+      // ['third:stairs', 'fourth:stairs', 10, 'Stairs'] and ['third:lift', 'fourth:lift', 6, 'Lift'].
       links: [
         ['ground:stairs', 'first:n4', 10, 'Stairs'],
         ['first:n4', 'second:n4', 10, 'Stairs'],
         ['first:n8', 'second:n6', 10, 'Stairs'],
+        ['second:n4', 'fourth:stairs', 20, 'Stairs'],
         ['ground:lift', 'first:n3', 6, 'Lift'],
-        ['first:n3', 'second:n3', 6, 'Lift']
+        ['first:n3', 'second:n3', 6, 'Lift'],
+        ['second:n3', 'fourth:lift', 12, 'Lift'],
+        // Compatible integration points for 3rd floor when integrated:
+        ['third:stairs', 'fourth:stairs', 10, 'Stairs'],
+        ['third:stairs2', 'fourth:stairs2', 10, 'Stairs'],
+        ['third:lift', 'fourth:lift', 6, 'Lift']
       ]
     })
   };
