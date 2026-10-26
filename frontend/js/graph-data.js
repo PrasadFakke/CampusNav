@@ -1,7 +1,7 @@
 // ========== CAMPUS GRAPH DATA ==========
 window.CAMPUS_LOCATIONS = [
   { id: 'entrance',        name: 'Main Entrance',                                          type: 'Entrance',  x: 400, y: 640, lat: 19.122472, lon: 72.835472 },
-  { id: 'spit',            name: "Bhavan's Sardar Patel Institute of Technology (SPIT)",   type: 'Institute', x:  80, y: 360, lat: 19.123204, lon: 72.836098 },
+  { id: 'spit',            name: "Bhavan's Sardar Patel Institute of Technology (SPIT)",   type: 'Institute', x:  80, y: 360, lat: 19.123162, lon: 72.836407 },
   { id: 'spce',            name: 'SPCE',                                                   type: 'College',   x: 200, y: 320, lat: 19.123187, lon: 72.835560 },
   { id: 'workshop',        name: 'SPCE Workshop',                                          type: 'Workshop',  x:  70, y: 200, lat: 19.123282, lon: 72.834831 },
   { id: 'library',         name: 'Library',                                                type: 'Facility',  x: 480, y: 400, lat: 19.123685, lon: 72.835921 },
