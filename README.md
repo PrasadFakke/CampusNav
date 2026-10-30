@@ -11,7 +11,7 @@ npm install
 npm start
 ```
 
-Open http://localhost:3000
+Open in browser: http://localhost:3000
 
 ## Accounts
 
